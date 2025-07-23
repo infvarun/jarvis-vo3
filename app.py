@@ -30,7 +30,7 @@ def main():
         st.session_state.xml_context = None
 
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(["📁 File Upload", "🗄️ Database Query", "🔍 Analysis", "📊 Results"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📁 File Upload", "🗄️ Database Query", "🔍 Analysis", "📊 Results", "⚙️ Settings"])
     
     with tab1:
         handle_file_uploads()
@@ -43,6 +43,9 @@ def main():
     
     with tab4:
         display_results()
+    
+    with tab5:
+        handle_settings()
 
 def handle_file_uploads():
     st.header("File Upload")
@@ -423,6 +426,103 @@ def display_results():
         st.subheader("Error Overview")
         for category in results['error_categories']:
             st.write(f"- **{category.get('category', 'Unknown')}**: {category.get('count', 0)} occurrences ({category.get('severity', 'Unknown')} severity)")
+
+def handle_settings():
+    st.header("Application Settings")
+    
+    # API Key Configuration
+    st.subheader("🔑 OpenAI API Configuration")
+    
+    # Check if API key is already set
+    api_key_status = check_api_key_status()
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        if api_key_status:
+            st.success("✅ OpenAI API key is configured and working")
+            if st.button("🔄 Test API Connection", type="secondary"):
+                test_api_connection()
+        else:
+            st.warning("⚠️ OpenAI API key not configured or not working")
+        
+        st.write("**Configure your OpenAI API Key:**")
+        st.write("1. Visit https://platform.openai.com/api-keys")
+        st.write("2. Create a new API key")
+        st.write("3. Enter the key in the field below")
+        
+        # API Key input
+        api_key_input = st.text_input(
+            "Enter your OpenAI API Key",
+            type="password",
+            placeholder="sk-...",
+            help="Your API key will be stored securely as an environment variable"
+        )
+        
+        if st.button("💾 Save API Key", type="primary"):
+            if api_key_input and api_key_input.startswith('sk-'):
+                save_api_key(api_key_input)
+            else:
+                st.error("Please enter a valid OpenAI API key (starts with 'sk-')")
+    
+    with col2:
+        st.info("**API Key Security**\n\nYour API key is stored securely as an environment variable and never displayed in the interface.")
+    
+    # System Information
+    st.subheader("📊 System Information")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Application Version:** v3.2.1")
+        st.write("**AI Model:** GPT-4o (via LangChain)")
+        st.write("**Database:** PostgreSQL")
+    
+    with col2:
+        if st.session_state.log_data:
+            st.write(f"**Log Entries Loaded:** {len(st.session_state.log_data)}")
+        if st.session_state.db_data is not None:
+            st.write(f"**Database Rows:** {len(st.session_state.db_data)}")
+        if st.session_state.xml_context:
+            st.write(f"**XML Files:** {len(st.session_state.xml_context)}")
+
+def check_api_key_status():
+    """Check if OpenAI API key is configured and working"""
+    try:
+        from components.ai_analyzer import AIAnalyzer
+        ai_analyzer = AIAnalyzer()
+        return ai_analyzer.validate_openai_api_key()
+    except:
+        return False
+
+def test_api_connection():
+    """Test the OpenAI API connection"""
+    try:
+        from components.ai_analyzer import AIAnalyzer
+        ai_analyzer = AIAnalyzer()
+        if ai_analyzer.validate_openai_api_key():
+            st.success("✅ API connection test successful!")
+        else:
+            st.error("❌ API connection test failed. Please check your API key.")
+    except Exception as e:
+        st.error(f"❌ API test error: {str(e)}")
+
+def save_api_key(api_key):
+    """Save the API key as an environment variable"""
+    import os
+    try:
+        # Set environment variable for current session
+        os.environ["OPENAI_API_KEY"] = api_key
+        
+        # Test the API key
+        if check_api_key_status():
+            st.success("✅ API key saved and validated successfully!")
+            st.info("Note: For permanent storage, add your API key to the Secrets tab in Replit")
+            st.rerun()
+        else:
+            st.error("❌ API key validation failed. Please check the key and try again.")
+    except Exception as e:
+        st.error(f"❌ Error saving API key: {str(e)}")
 
 def generate_text_report(results):
     """Generate a text report from analysis results"""
