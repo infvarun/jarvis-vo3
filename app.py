@@ -68,7 +68,23 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.title("📊 Log Analysis Tool")
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style="margin-right: 12px;">
+            <rect x="3" y="3" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+            <rect x="14" y="3" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+            <rect x="14" y="14" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+            <rect x="3" y="14" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+            <defs>
+                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#6366f1"/>
+                    <stop offset="100%" style="stop-color:#8b5cf6"/>
+                </linearGradient>
+            </defs>
+        </svg>
+        <h1 style="margin: 0; background: linear-gradient(45deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Log Analysis Tool</h1>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("**Intelligent troubleshooting insights using AI-powered analysis**")
     
     # Initialize session state
@@ -81,8 +97,26 @@ def main():
     if 'xml_context' not in st.session_state:
         st.session_state.xml_context = None
 
+    # Create tabs with custom HTML icons
+    st.markdown("""
+    <style>
+    .tab-icon {
+        width: 20px;
+        height: 20px;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(["📂 File Upload", "💾 Database Query", "🔍 Analysis", "📈 Results"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📁 File Upload", 
+        "🗃️ Database Query", 
+        "⚙️ Analysis", 
+        "📊 Results"
+    ])
     
     with tab1:
         handle_file_uploads()
@@ -270,7 +304,7 @@ def handle_analysis():
         )
         
         # Analysis button
-        if st.button("⚡ Start AI Analysis", type="primary", use_container_width=True):
+        if st.button("🚀 Start AI Analysis", type="primary", use_container_width=True):
             try:
                 with st.spinner("Analyzing logs with AI..."):
                     # Check if API key is available first
@@ -336,7 +370,7 @@ def display_analysis_results():
         return
     
     # Create tabs for different result sections
-    result_tabs = st.tabs(["📋 Summary", "⚠️ Errors", "💡 Recommendations", "📊 Details", "📤 Export"])
+    result_tabs = st.tabs(["📄 Summary", "🔴 Errors", "💡 Recommendations", "📊 Details", "⬇️ Export"])
     
     with result_tabs[0]:  # Summary
         if 'summary' in results:
