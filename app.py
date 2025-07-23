@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from components.file_handler import FileHandler
 from components.database_handler import DatabaseHandler
 from components.xml_parser import XMLParser
@@ -166,16 +166,47 @@ def handle_analysis():
         
         # Time filters
         st.write("**Time Range Filter**")
-        start_time = st.text_input(
-            "Start Time",
-            placeholder="YYYY-MM-DD HH:MM:SS",
-            key="start_time_filter"
-        )
-        end_time = st.text_input(
-            "End Time", 
-            placeholder="YYYY-MM-DD HH:MM:SS",
-            key="end_time_filter"
-        )
+        
+        # Enable/disable time filtering
+        use_time_filter = st.checkbox("Filter by time range", value=False, key="use_time_filter")
+        
+        start_time = None
+        end_time = None
+        
+        if use_time_filter:
+            col_start, col_end = st.columns(2)
+            
+            with col_start:
+                start_date = st.date_input(
+                    "Start Date",
+                    value=datetime.now().date() - timedelta(days=1),
+                    help="Select the start date for filtering",
+                    key="start_date_filter"
+                )
+                start_time_input = st.time_input(
+                    "Start Time",
+                    value=datetime.now().time().replace(hour=0, minute=0, second=0),
+                    help="Select the start time",
+                    key="start_time_input_filter"
+                )
+                # Combine date and time
+                start_time = datetime.combine(start_date, start_time_input).strftime("%Y-%m-%d %H:%M:%S")
+            
+            with col_end:
+                end_date = st.date_input(
+                    "End Date", 
+                    value=datetime.now().date(),
+                    help="Select the end date for filtering",
+                    key="end_date_filter"
+                )
+                end_time_input = st.time_input(
+                    "End Time",
+                    value=datetime.now().time().replace(hour=23, minute=59, second=59),
+                    help="Select the end time",
+                    key="end_time_input_filter"
+                )
+                # Combine date and time
+                end_time = datetime.combine(end_date, end_time_input).strftime("%Y-%m-%d %H:%M:%S")
         
         # Log level filter
         st.write("**Log Level Filter**")
