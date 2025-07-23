@@ -19,6 +19,8 @@ Preferred communication style: Simple, everyday language.
   - Key metrics dashboard with total errors and affected services
   - Enhanced export functionality with professional download options
   - Better organization with expandable sections and cleaner UI
+- Configured proper environment variable approach for OpenAI API key (use Replit Secrets tab)
+- Created sample JBoss clinical IRT system log with realistic order failures for testing
 
 ## System Architecture
 
