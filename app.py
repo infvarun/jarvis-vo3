@@ -16,6 +16,160 @@ st.set_page_config(
 )
 
 def main():
+    # Custom gradient theme CSS
+    st.markdown("""
+    <style>
+    /* Main app background with gradient */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-attachment: fixed;
+    }
+    
+    /* Main container styling */
+    .main .block-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 2rem;
+        margin-top: 1rem;
+    }
+    
+    /* Button styling with gradient */
+    .stButton > button {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(45deg, #764ba2, #667eea);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: linear-gradient(45deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Input field styling */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        color: white;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Headers with gradient text */
+    h1, h2, h3 {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+    }
+    
+    /* File uploader styling */
+    .stFileUploader {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        border: 2px dashed rgba(102, 126, 234, 0.5);
+        padding: 1rem;
+    }
+    
+    /* Alert boxes */
+    .stAlert {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Success messages */
+    .stSuccess {
+        background: linear-gradient(45deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2));
+        border-left: 4px solid #22c55e;
+    }
+    
+    /* Error messages */
+    .stError {
+        background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(147, 51, 234, 0.2));
+        border-left: 4px solid #ef4444;
+    }
+    
+    /* Info boxes */
+    .stInfo {
+        background: linear-gradient(45deg, rgba(59, 130, 246, 0.2), rgba(102, 126, 234, 0.2));
+        border-left: 4px solid #3b82f6;
+    }
+    
+    /* Warning boxes */
+    .stWarning {
+        background: linear-gradient(45deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+        border-left: 4px solid #fbbf24;
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Checkbox and radio styling */
+    .stCheckbox > label {
+        color: white;
+    }
+    
+    /* Multiselect styling */
+    .stMultiSelect > div > div {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+    
+    /* Date input styling */
+    .stDateInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        color: white;
+    }
+    
+    /* Time input styling */
+    .stTimeInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        color: white;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.title("🔍 Log Analysis Tool")
     st.markdown("**Intelligent troubleshooting insights using AI-powered analysis**")
     
