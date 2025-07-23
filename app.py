@@ -38,10 +38,32 @@ def main():
         background-clip: text;
     }
     
+    /* Tab styling with rounded corners and padding */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        padding: 4px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 12px;
+        padding: 8px 16px;
+        margin: 0 2px;
+        transition: all 0.2s ease;
+        border: 1px solid #e5e7eb;
+        background: white;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+    
     /* Active tabs */
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background: linear-gradient(45deg, #6366f1, #8b5cf6);
         color: white;
+        border: 1px solid transparent;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
     }
     </style>
     """, unsafe_allow_html=True)
