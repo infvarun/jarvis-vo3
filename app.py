@@ -68,7 +68,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.title("🔍 Log Analysis Tool")
+    st.title("📊 Log Analysis Tool")
     st.markdown("**Intelligent troubleshooting insights using AI-powered analysis**")
     
     # Initialize session state
@@ -82,7 +82,7 @@ def main():
         st.session_state.xml_context = None
 
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(["📁 File Upload", "🗄️ Database Query", "🔍 Analysis", "📊 Results"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📂 File Upload", "💾 Database Query", "🔍 Analysis", "📈 Results"])
     
     with tab1:
         handle_file_uploads()
@@ -270,14 +270,14 @@ def handle_analysis():
         )
         
         # Analysis button
-        if st.button("🤖 Start AI Analysis", type="primary", use_container_width=True):
+        if st.button("⚡ Start AI Analysis", type="primary", use_container_width=True):
             try:
                 with st.spinner("Analyzing logs with AI..."):
                     # Check if API key is available first
                     api_key = os.getenv("OPENAI_API_KEY")
                     if not api_key:
-                        st.error("❌ OpenAI API key not found. Please set the OPENAI_API_KEY environment variable in your Replit secrets.")
-                        st.info("Go to the Secrets tab in Replit and add OPENAI_API_KEY with your OpenAI API key.")
+                        st.error("🔐 OpenAI API key not found. Please set the OPENAI_API_KEY environment variable in your Replit secrets.")
+                        st.info("💡 Go to the Secrets tab in Replit and add OPENAI_API_KEY with your OpenAI API key.")
                         return
                     
                     log_analyzer = LogAnalyzer()
@@ -311,10 +311,10 @@ def handle_analysis():
         # Show data summary
         if st.session_state.log_data:
             st.write("**Data Summary**")
-            st.info(f"📊 Total log entries: {len(st.session_state.log_data)}")
+            st.info(f"📈 Total log entries: {len(st.session_state.log_data)}")
             
             if st.session_state.db_data is not None:
-                st.info(f"🗄️ Database rows: {len(st.session_state.db_data)}")
+                st.info(f"💾 Database rows: {len(st.session_state.db_data)}")
             
             if st.session_state.xml_context:
                 st.info(f"📄 XML files: {len(st.session_state.xml_context)}")
@@ -325,7 +325,7 @@ def handle_analysis():
         if st.session_state.analysis_results:
             display_analysis_results()
         else:
-            st.info("🔍 Results will appear here after running analysis")
+            st.info("📋 Results will appear here after running analysis")
 
 def display_analysis_results():
     """Display analysis results in a formatted way"""
@@ -336,7 +336,7 @@ def display_analysis_results():
         return
     
     # Create tabs for different result sections
-    result_tabs = st.tabs(["📋 Summary", "🚨 Errors", "💡 Recommendations", "📊 Details", "📤 Export"])
+    result_tabs = st.tabs(["📋 Summary", "⚠️ Errors", "💡 Recommendations", "📊 Details", "📤 Export"])
     
     with result_tabs[0]:  # Summary
         if 'summary' in results:
