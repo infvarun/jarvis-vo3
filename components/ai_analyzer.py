@@ -7,16 +7,21 @@ import pandas as pd
 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
 # do not change this unless explicitly requested by the user
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 class AIAnalyzer:
     """Handles AI-powered log analysis using LangChain and OpenAI"""
     
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not set")
+        
+        # Set environment variable for LangChain to pick up
+        os.environ["OPENAI_API_KEY"] = api_key
+        
         self.llm = ChatOpenAI(
             model="gpt-4o",  # Using the newest OpenAI model
-            api_key=api_key if api_key else "",
             temperature=0.3
         )
     

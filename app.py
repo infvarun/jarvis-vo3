@@ -190,6 +190,13 @@ def handle_analysis():
         if st.button("🤖 Start AI Analysis", type="primary", use_container_width=True):
             try:
                 with st.spinner("Analyzing logs with AI..."):
+                    # Check if API key is available first
+                    api_key = os.getenv("OPENAI_API_KEY")
+                    if not api_key:
+                        st.error("❌ OpenAI API key not found. Please set the OPENAI_API_KEY environment variable in your Replit secrets.")
+                        st.info("Go to the Secrets tab in Replit and add OPENAI_API_KEY with your OpenAI API key.")
+                        return
+                    
                     log_analyzer = LogAnalyzer()
                     ai_analyzer = AIAnalyzer()
                     
@@ -207,13 +214,6 @@ def handle_analysis():
                         'database_results': st.session_state.db_data,
                         'xml_context': st.session_state.xml_context
                     }
-                    
-                    # Check if API key is available
-                    api_key = os.getenv("OPENAI_API_KEY")
-                    if not api_key:
-                        st.error("❌ OpenAI API key not found. Please set the OPENAI_API_KEY environment variable in your Replit secrets.")
-                        st.info("Go to the Secrets tab in Replit and add OPENAI_API_KEY with your OpenAI API key.")
-                        return
                     
                     # Perform AI analysis
                     analysis_results = ai_analyzer.analyze_logs(context)
