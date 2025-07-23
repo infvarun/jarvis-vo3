@@ -13,9 +13,10 @@ class AIAnalyzer:
     """Handles AI-powered log analysis using LangChain and OpenAI"""
     
     def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY")
         self.llm = ChatOpenAI(
             model="gpt-4o",  # Using the newest OpenAI model
-            api_key=os.getenv("OPENAI_API_KEY"),
+            api_key=api_key if api_key else "",
             temperature=0.3
         )
     

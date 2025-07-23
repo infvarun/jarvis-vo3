@@ -158,137 +158,271 @@ def handle_analysis():
         st.warning("⚠️ Please upload log files first")
         return
     
-    # Analysis options
-    col1, col2 = st.columns(2)
+    # Show analysis options and results side by side
+    col1, col2 = st.columns([1, 2])
     
     with col1:
+        st.subheader("Analysis Options")
+        
+        # Time filters
+        st.write("**Time Range Filter**")
         start_time = st.text_input(
-            "Start Time Filter (optional)",
-            placeholder="YYYY-MM-DD HH:MM:SS"
+            "Start Time",
+            placeholder="YYYY-MM-DD HH:MM:SS",
+            key="start_time_filter"
+        )
+        end_time = st.text_input(
+            "End Time", 
+            placeholder="YYYY-MM-DD HH:MM:SS",
+            key="end_time_filter"
         )
         
-    with col2:
-        end_time = st.text_input(
-            "End Time Filter (optional)",
-            placeholder="YYYY-MM-DD HH:MM:SS"
+        # Log level filter
+        st.write("**Log Level Filter**")
+        log_level_filter = st.multiselect(
+            "Select levels to analyze",
+            options=['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'],
+            default=['ERROR', 'WARN', 'WARNING', 'CRITICAL', 'FATAL'],
+            key="log_level_filter"
         )
+        
+        # Analysis button
+        if st.button("🤖 Start AI Analysis", type="primary", use_container_width=True):
+            try:
+                with st.spinner("Analyzing logs with AI..."):
+                    log_analyzer = LogAnalyzer()
+                    ai_analyzer = AIAnalyzer()
+                    
+                    # Filter logs
+                    filtered_logs = log_analyzer.filter_logs(
+                        st.session_state.log_data,
+                        start_time=start_time if start_time else None,
+                        end_time=end_time if end_time else None,
+                        log_levels=log_level_filter
+                    )
+                    
+                    # Prepare context
+                    context = {
+                        'logs': filtered_logs,
+                        'database_results': st.session_state.db_data,
+                        'xml_context': st.session_state.xml_context
+                    }
+                    
+                    # Perform AI analysis
+                    analysis_results = ai_analyzer.analyze_logs(context)
+                    st.session_state.analysis_results = analysis_results
+                    
+                    st.success("✅ Analysis completed!")
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"❌ Analysis error: {str(e)}")
+        
+        # Show data summary
+        if st.session_state.log_data:
+            st.write("**Data Summary**")
+            st.info(f"📊 Total log entries: {len(st.session_state.log_data)}")
+            
+            if st.session_state.db_data is not None:
+                st.info(f"🗄️ Database rows: {len(st.session_state.db_data)}")
+            
+            if st.session_state.xml_context:
+                st.info(f"📄 XML files: {len(st.session_state.xml_context)}")
     
-    log_level_filter = st.multiselect(
-        "Filter by Log Level",
-        options=['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'],
-        default=['ERROR', 'WARN', 'WARNING', 'CRITICAL', 'FATAL']
-    )
+    with col2:
+        st.subheader("Analysis Results")
+        
+        if st.session_state.analysis_results:
+            display_analysis_results()
+        else:
+            st.info("🔍 Results will appear here after running analysis")
+
+def display_analysis_results():
+    """Display analysis results in a formatted way"""
+    results = st.session_state.analysis_results
     
-    if st.button("🤖 Start AI Analysis", type="primary"):
-        try:
-            with st.spinner("Analyzing logs with AI..."):
-                log_analyzer = LogAnalyzer()
-                ai_analyzer = AIAnalyzer()
+    if 'error' in results:
+        st.error(f"Analysis failed: {results['error']}")
+        return
+    
+    # Create tabs for different result sections
+    result_tabs = st.tabs(["📋 Summary", "🚨 Errors", "💡 Recommendations", "📊 Details", "📤 Export"])
+    
+    with result_tabs[0]:  # Summary
+        if 'summary' in results:
+            st.markdown("### Executive Summary")
+            st.info(results['summary'])
+        
+        # Key metrics
+        if 'error_categories' in results:
+            col1, col2, col3 = st.columns(3)
+            
+            total_errors = sum(cat.get('count', 0) for cat in results['error_categories'])
+            high_severity = sum(1 for cat in results['error_categories'] if cat.get('severity') == 'HIGH')
+            
+            with col1:
+                st.metric("Total Errors", total_errors)
+            with col2:
+                st.metric("High Severity Issues", high_severity)
+            with col3:
+                affected_services = len(results.get('affected_services', []))
+                st.metric("Affected Services", affected_services)
+    
+    with result_tabs[1]:  # Errors
+        if 'error_categories' in results:
+            st.markdown("### Error Categories")
+            
+            for i, category in enumerate(results['error_categories']):
+                severity = category.get('severity', 'UNKNOWN')
+                count = category.get('count', 0)
+                category_name = category.get('category', 'Unknown')
                 
-                # Filter logs
-                filtered_logs = log_analyzer.filter_logs(
-                    st.session_state.log_data,
-                    start_time=start_time if start_time else None,
-                    end_time=end_time if end_time else None,
-                    log_levels=log_level_filter
-                )
+                # Color code by severity
+                if severity == 'HIGH':
+                    st.error(f"**🔴 {category_name}** - {count} occurrences")
+                elif severity == 'MEDIUM':
+                    st.warning(f"**🟡 {category_name}** - {count} occurrences")
+                else:
+                    st.info(f"**🔵 {category_name}** - {count} occurrences")
                 
-                # Prepare context
-                context = {
-                    'logs': filtered_logs,
-                    'database_results': st.session_state.db_data,
-                    'xml_context': st.session_state.xml_context
-                }
+                with st.expander(f"Details for {category_name}"):
+                    st.write(f"**Description**: {category.get('description', 'No description')}")
+                    
+                    if category.get('affected_components'):
+                        st.write("**Affected Components**:")
+                        for comp in category['affected_components']:
+                            st.write(f"- {comp}")
+                    
+                    if category.get('time_pattern'):
+                        st.write(f"**Time Pattern**: {category['time_pattern']}")
+                    
+                    if category.get('examples'):
+                        st.write("**Example Log Entries**:")
+                        for example in category['examples'][:3]:
+                            st.code(example, language='text')
+        
+        # Timeline if available
+        if 'timeline' in results:
+            st.markdown("### Timeline Analysis")
+            st.write(results['timeline'])
+    
+    with result_tabs[2]:  # Recommendations
+        if 'recommendations' in results:
+            st.markdown("### Action Items")
+            
+            for i, rec in enumerate(results['recommendations'], 1):
+                st.markdown(f"**{i}.** {rec}")
+                st.markdown("---")
+        
+        # Root causes
+        if 'root_causes' in results:
+            st.markdown("### Root Cause Analysis")
+            
+            for cause in results['root_causes']:
+                confidence = cause.get('confidence', 'UNKNOWN')
                 
-                # Perform AI analysis
-                analysis_results = ai_analyzer.analyze_logs(context)
-                st.session_state.analysis_results = analysis_results
+                if confidence == 'HIGH':
+                    st.success(f"**High Confidence**: {cause.get('cause', 'Unknown cause')}")
+                elif confidence == 'MEDIUM':
+                    st.warning(f"**Medium Confidence**: {cause.get('cause', 'Unknown cause')}")
+                else:
+                    st.info(f"**Low Confidence**: {cause.get('cause', 'Unknown cause')}")
                 
-                st.success("✅ Analysis completed!")
-                st.rerun()
-                
-        except Exception as e:
-            st.error(f"❌ Analysis error: {str(e)}")
+                if cause.get('evidence'):
+                    with st.expander("Supporting Evidence"):
+                        for evidence in cause['evidence']:
+                            st.write(f"- {evidence}")
+    
+    with result_tabs[3]:  # Details
+        # Affected services table
+        if 'affected_services' in results:
+            st.markdown("### Affected Services")
+            services_df = pd.DataFrame(results['affected_services'])
+            st.dataframe(services_df, use_container_width=True)
+        
+        # Additional context sections
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.session_state.db_data is not None:
+                st.markdown("### Database Context")
+                st.write("Query results were included in analysis:")
+                st.dataframe(st.session_state.db_data.head(5), use_container_width=True)
+                if len(st.session_state.db_data) > 5:
+                    st.caption(f"Showing first 5 of {len(st.session_state.db_data)} rows")
+        
+        with col2:
+            if st.session_state.xml_context:
+                st.markdown("### XML Context")
+                for xml_file in st.session_state.xml_context:
+                    with st.expander(f"📄 {xml_file['filename']}"):
+                        content = xml_file['content']
+                        if len(content) > 500:
+                            st.text(content[:500] + "\n... (truncated)")
+                        else:
+                            st.text(content)
+        
+        # Analysis metadata
+        if 'analysis_timestamp' in results:
+            st.markdown("### Analysis Metadata")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"**Analysis Time**: {results['analysis_timestamp']}")
+            with col2:
+                st.write(f"**AI Model**: {results.get('model_used', 'Unknown')}")
+    
+    with result_tabs[4]:  # Export
+        st.markdown("### Export Analysis Results")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Text Report**")
+            st.write("Comprehensive report in readable format")
+            
+            export_text = generate_text_report(results)
+            st.download_button(
+                label="📄 Download Text Report",
+                data=export_text,
+                file_name=f"log_analysis_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        
+        with col2:
+            st.markdown("**JSON Data**")
+            st.write("Raw analysis data for further processing")
+            
+            import json
+            export_json = json.dumps(results, indent=2, default=str)
+            st.download_button(
+                label="📊 Download JSON Data",
+                data=export_json,
+                file_name=f"log_analysis_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json",
+                use_container_width=True
+            )
 
 def display_results():
-    st.header("Analysis Results")
+    st.header("Analysis Results Archive")
     
     if not st.session_state.analysis_results:
         st.info("No analysis results available. Please run the analysis first.")
         return
     
+    st.write("View detailed analysis results in the **Analysis** tab for better formatting and organization.")
+    
+    # Simple display for backward compatibility
     results = st.session_state.analysis_results
     
-    # Summary section
-    st.subheader("📋 Executive Summary")
-    st.write(results.get('summary', 'No summary available'))
+    if 'summary' in results:
+        st.subheader("Summary")
+        st.write(results['summary'])
     
-    # Error categorization
     if 'error_categories' in results:
-        st.subheader("🚨 Error Categories")
+        st.subheader("Error Overview")
         for category in results['error_categories']:
-            with st.expander(f"{category.get('category', 'Unknown')} ({category.get('count', 0)} occurrences)"):
-                st.write(f"**Severity**: {category.get('severity', 'Unknown')}")
-                st.write(f"**Description**: {category.get('description', 'No description')}")
-                if category.get('examples'):
-                    st.write("**Examples**:")
-                    for example in category['examples'][:3]:  # Show first 3 examples
-                        st.code(example, language='text')
-    
-    # Recommendations
-    if 'recommendations' in results:
-        st.subheader("💡 Recommendations")
-        for i, rec in enumerate(results['recommendations'], 1):
-            st.write(f"**{i}.** {rec}")
-    
-    # Affected services
-    if 'affected_services' in results:
-        st.subheader("🏗️ Affected Services/Components")
-        services_df = pd.DataFrame(results['affected_services'])
-        st.dataframe(services_df, use_container_width=True)
-    
-    # Timeline analysis
-    if 'timeline' in results:
-        st.subheader("⏰ Timeline Analysis")
-        st.write(results['timeline'])
-    
-    # Database context (if available)
-    if st.session_state.db_data is not None:
-        st.subheader("🗄️ Database Context")
-        st.write("Database query results were included in the analysis:")
-        st.dataframe(st.session_state.db_data, use_container_width=True)
-    
-    # XML context (if available)
-    if st.session_state.xml_context:
-        st.subheader("📄 XML Context")
-        for xml_file in st.session_state.xml_context:
-            with st.expander(f"XML File: {xml_file['filename']}"):
-                st.text(xml_file['content'][:1000] + "..." if len(xml_file['content']) > 1000 else xml_file['content'])
-    
-    # Export functionality
-    st.subheader("📤 Export Results")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📄 Export as Text"):
-            export_text = generate_text_report(results)
-            st.download_button(
-                label="Download Report",
-                data=export_text,
-                file_name=f"log_analysis_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain"
-            )
-    
-    with col2:
-        if st.button("📊 Export as JSON"):
-            import json
-            export_json = json.dumps(results, indent=2, default=str)
-            st.download_button(
-                label="Download JSON",
-                data=export_json,
-                file_name=f"log_analysis_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json"
-            )
+            st.write(f"- **{category.get('category', 'Unknown')}**: {category.get('count', 0)} occurrences ({category.get('severity', 'Unknown')} severity)")
 
 def generate_text_report(results):
     """Generate a text report from analysis results"""

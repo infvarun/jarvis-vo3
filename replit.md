@@ -8,6 +8,18 @@ This is a Streamlit-based log analysis tool that provides intelligent troublesho
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**July 23, 2025**
+- Updated AI analyzer to use LangChain instead of direct OpenAI client integration
+- Enhanced Analysis tab with improved result formatting and organization:
+  - Split layout with options on left and results on right
+  - Tabbed result display (Summary, Errors, Recommendations, Details, Export)
+  - Color-coded severity indicators for error categories
+  - Key metrics dashboard with total errors and affected services
+  - Enhanced export functionality with professional download options
+  - Better organization with expandable sections and cleaner UI
+
 ## System Architecture
 
 The application follows a modular, component-based architecture built on top of Streamlit for the web interface. The system is designed around four main workflows:
