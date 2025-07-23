@@ -16,147 +16,32 @@ st.set_page_config(
 )
 
 def main():
-    # Custom gradient theme CSS
+    # Simple purple/blue accent styling
     st.markdown("""
     <style>
-    /* Clean white background */
-    .stApp {
-        background: white;
-    }
-    
-    /* Button styling with purple/blue gradient */
-    .stButton > button {
-        background: linear-gradient(45deg, #667eea, #764ba2);
-        color: white;
+    /* Primary buttons with gradient */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(45deg, #6366f1, #8b5cf6);
         border: none;
-        border-radius: 25px;
-        padding: 0.5rem 2rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-    
-    .stButton > button:hover {
-        background: linear-gradient(45deg, #764ba2, #667eea);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-    
-    /* Tab styling with gradient */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: #f8fafc;
-        border-radius: 15px;
-        padding: 0.5rem;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: white;
-        border-radius: 10px;
-        color: #64748b;
-        font-weight: 500;
-        border: 1px solid #e2e8f0;
-        padding: 0.5rem 1rem;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(45deg, #667eea, #764ba2);
         color: white;
-        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(45deg, #4f46e5, #7c3aed);
     }
     
     /* Headers with gradient text */
-    h1, h2, h3 {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+    h1 {
+        background: linear-gradient(45deg, #6366f1, #8b5cf6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        font-weight: bold;
     }
     
-    /* File uploader with gradient border */
-    .stFileUploader {
-        background: white;
-        border-radius: 15px;
-        border: 2px dashed transparent;
-        background-image: linear-gradient(white, white), linear-gradient(45deg, #667eea, #764ba2);
-        background-origin: border-box;
-        background-clip: content-box, border-box;
-        padding: 1rem;
-    }
-    
-    /* Success messages with gradient */
-    .stSuccess {
-        background: linear-gradient(45deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
-        border-left: 4px solid;
-        border-image: linear-gradient(45deg, #22c55e, #3b82f6) 1;
-        border-radius: 10px;
-    }
-    
-    /* Error messages with gradient */
-    .stError {
-        background: linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(147, 51, 234, 0.1));
-        border-left: 4px solid;
-        border-image: linear-gradient(45deg, #ef4444, #9333ea) 1;
-        border-radius: 10px;
-    }
-    
-    /* Info boxes with gradient */
-    .stInfo {
-        background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(102, 126, 234, 0.1));
-        border-left: 4px solid;
-        border-image: linear-gradient(45deg, #3b82f6, #667eea) 1;
-        border-radius: 10px;
-    }
-    
-    /* Warning boxes with gradient */
-    .stWarning {
-        background: linear-gradient(45deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
-        border-left: 4px solid;
-        border-image: linear-gradient(45deg, #fbbf24, #f59e0b) 1;
-        border-radius: 10px;
-    }
-    
-    /* Checkbox styling */
-    .stCheckbox > label {
-        color: #334155;
-    }
-    
-    /* Input field enhancements */
-    .stTextInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus,
-    .stSelectbox > div > div > select:focus {
-        border: 2px solid;
-        border-image: linear-gradient(45deg, #667eea, #764ba2) 1;
-    }
-    
-    /* Multiselect with gradient accent */
-    .stMultiSelect [data-baseweb="tag"] {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+    /* Active tabs */
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(45deg, #6366f1, #8b5cf6);
         color: white;
-    }
-    
-    /* Date and time inputs with gradient focus */
-    .stDateInput > div > div > input:focus,
-    .stTimeInput > div > div > input:focus {
-        border: 2px solid;
-        border-image: linear-gradient(45deg, #667eea, #764ba2) 1;
-    }
-    
-    /* Spinner with gradient */
-    .stSpinner > div {
-        border-top-color: #667eea;
-        border-right-color: #764ba2;
-    }
-    
-    /* Progress bar with gradient */
-    .stProgress > div > div > div {
-        background: linear-gradient(45deg, #667eea, #764ba2);
     }
     </style>
     """, unsafe_allow_html=True)
