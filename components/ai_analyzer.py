@@ -51,7 +51,29 @@ class AIAnalyzer:
             # Parse response - ensure we have content before parsing
             response_content = response.content if response.content else "{}"
             if isinstance(response_content, str):
-                analysis_result = json.loads(response_content)
+                # Clean up response content - remove markdown code blocks if present
+                clean_content = response_content.strip()
+                
+                # Try to extract JSON from markdown code blocks
+                if "```json" in clean_content:
+                    json_start = clean_content.find("```json") + 7
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                elif "```" in clean_content:
+                    # Handle generic code blocks
+                    json_start = clean_content.find("```") + 3
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                
+                try:
+                    analysis_result = json.loads(clean_content)
+                except json.JSONDecodeError as e:
+                    analysis_result = {
+                        "error": f"Failed to parse AI response as JSON: {str(e)}",
+                        "raw_response": response_content[:500] + "..." if len(response_content) > 500 else response_content
+                    }
             else:
                 analysis_result = {"error": "Invalid response format from AI model"}
             
@@ -78,7 +100,9 @@ class AIAnalyzer:
 
 Your task is to analyze system/application logs, identify errors, warnings, anomalies, and potential root causes of failure. You should group related log entries, highlight timestamps, components, and affected services, summarize the impact, and suggest corrective actions.
 
-Always respond with a valid JSON object containing the following structure:
+IMPORTANT: Respond ONLY with a valid JSON object. Do not include any markdown formatting, explanations, or text outside the JSON. The response must start with '{' and end with '}'.
+
+Use this exact JSON structure:
 {
     "summary": "Executive summary of findings",
     "error_categories": [
