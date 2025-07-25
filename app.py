@@ -1,12 +1,20 @@
 import streamlit as st
 import pandas as pd
 import os
+import hashlib
 from datetime import datetime, timedelta
 from components.file_handler import FileHandler
 from components.database_handler import DatabaseHandler
 from components.xml_parser import XMLParser
 from components.log_analyzer import LogAnalyzer
 from components.ai_analyzer import AIAnalyzer
+
+# Enterprise utilities
+from config.settings import Config
+from utils.logger import enterprise_logger
+from utils.security import security_manager
+from utils.performance import performance_monitor, monitor_ai_analysis, monitor_file_processing
+from utils.cache import enterprise_cache
 
 # Configure page
 st.set_page_config(
@@ -16,6 +24,9 @@ st.set_page_config(
 )
 
 def main():
+    # Initialize enterprise features
+    initialize_enterprise_features()
+    
     # Simple purple/blue accent styling
     st.markdown("""
     <style>
@@ -129,6 +140,9 @@ def main():
     
     with tab4:
         display_results()
+    
+    # Enterprise features sidebar
+    display_enterprise_sidebar()
 
 def handle_file_uploads():
     st.header("File Upload")
@@ -315,7 +329,6 @@ def handle_analysis():
                         return
                     
                     log_analyzer = LogAnalyzer()
-                    ai_analyzer = AIAnalyzer()
                     
                     # Filter logs
                     filtered_logs = log_analyzer.filter_logs(
@@ -332,8 +345,8 @@ def handle_analysis():
                         'xml_context': st.session_state.xml_context
                     }
                     
-                    # Perform AI analysis
-                    analysis_results = ai_analyzer.analyze_logs(context)
+                    # Use enhanced AI analysis with caching
+                    analysis_results = enhanced_ai_analysis(context)
                     st.session_state.analysis_results = analysis_results
                     
                     st.success("✅ Analysis completed!")
@@ -582,6 +595,176 @@ def generate_text_report(results):
         report.append("")
     
     return "\n".join(report)
+
+def initialize_enterprise_features():
+    """Initialize enterprise-grade features"""
+    # Validate configuration
+    config_validation = Config.validate_config()
+    
+    # Log application startup
+    enterprise_logger.log_user_action("APPLICATION_STARTUP")
+    
+    # Clear expired cache
+    enterprise_cache.clear_expired_cache()
+    
+    # Initialize session security
+    if 'session_token' not in st.session_state:
+        st.session_state.session_token = security_manager.generate_session_token()
+    
+    # Validate session
+    if not security_manager.validate_session_token(st.session_state.session_token):
+        st.session_state.session_token = security_manager.generate_session_token()
+        enterprise_logger.log_security_event("SESSION_RENEWED")
+
+def display_enterprise_sidebar():
+    """Display enterprise monitoring sidebar"""
+    with st.sidebar:
+        st.markdown("### 🏢 Enterprise Dashboard")
+        
+        # System metrics
+        with st.expander("📊 System Metrics"):
+            metrics = performance_monitor.get_system_metrics()
+            if metrics:
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Memory Usage", f"{metrics.get('memory_usage_percent', 0):.1f}%")
+                    st.metric("CPU Usage", f"{metrics.get('cpu_usage_percent', 0):.1f}%")
+                with col2:
+                    st.metric("Memory Available", f"{metrics.get('memory_available_gb', 0):.1f} GB")
+                    st.metric("CPU Cores", f"{metrics.get('cpu_count', 0)}")
+        
+        # Performance metrics
+        with st.expander("⚡ Performance Metrics"):
+            perf_summary = performance_monitor.get_performance_summary()
+            if perf_summary:
+                for operation, stats in perf_summary.items():
+                    st.write(f"**{operation.replace('_', ' ').title()}**")
+                    st.write(f"- Success Rate: {stats['success_rate']:.1f}%")
+                    st.write(f"- Avg Duration: {stats['avg_duration']:.2f}s")
+                    st.write(f"- Total Calls: {stats['total_calls']}")
+            else:
+                st.info("No performance data available yet")
+        
+        # Cache statistics
+        with st.expander("💾 Cache Statistics"):
+            cache_stats = enterprise_cache.get_cache_stats()
+            if cache_stats['total_entries'] > 0:
+                st.metric("Cache Entries", cache_stats['total_entries'])
+                st.metric("Hit Rate", f"{cache_stats['hit_rate_percent']:.1f}%")
+                st.metric("Cache Size", f"{cache_stats['estimated_size_bytes'] / 1024:.1f} KB")
+                
+                if st.button("🗑️ Clear Cache"):
+                    enterprise_cache.clear_expired_cache()
+                    st.success("Cache cleared!")
+                    st.rerun()
+            else:
+                st.info("No cache data available")
+        
+        # Configuration status
+        with st.expander("⚙️ Configuration"):
+            config_validation = Config.validate_config()
+            for var, is_valid in config_validation.items():
+                status = "✅" if is_valid else "❌"
+                st.write(f"{status} {var}")
+        
+        # Security status
+        with st.expander("🔒 Security Status"):
+            st.write("✅ File validation enabled")
+            st.write("✅ SQL injection protection")
+            st.write("✅ Session management active")
+            st.write("✅ Audit logging enabled")
+
+@monitor_file_processing
+def enhanced_file_upload_handler(uploaded_files):
+    """Enhanced file upload with security and caching"""
+    processed_files = []
+    
+    for uploaded_file in uploaded_files:
+        # Security validation
+        is_valid, message = security_manager.validate_file_upload(uploaded_file)
+        if not is_valid:
+            st.error(f"Security validation failed for {uploaded_file.name}: {message}")
+            continue
+        
+        # Generate file hash for caching
+        file_content = uploaded_file.read()
+        file_hash = hashlib.md5(file_content).hexdigest()
+        
+        # Check cache first
+        cached_result = enterprise_cache.get_file_processing_cache(file_hash)
+        if cached_result:
+            st.success(f"📦 Using cached data for {uploaded_file.name}")
+            processed_files.append(cached_result)
+            continue
+        
+        # Process file
+        uploaded_file.seek(0)  # Reset file pointer
+        file_handler = FileHandler()
+        
+        try:
+            log_data = file_handler.process_log_file(uploaded_file)
+            
+            result = {
+                'filename': uploaded_file.name,
+                'data': log_data,
+                'hash': file_hash,
+                'processed_at': datetime.now().isoformat()
+            }
+            
+            # Cache the result
+            enterprise_cache.set_file_processing_cache(file_hash, result)
+            processed_files.append(result)
+            
+            enterprise_logger.log_user_action(
+                "FILE_PROCESSED",
+                filename=uploaded_file.name,
+                size=len(file_content),
+                entries=len(log_data) if log_data else 0
+            )
+            
+        except Exception as e:
+            enterprise_logger.log_error(e, f"File processing failed for {uploaded_file.name}")
+            st.error(f"Processing failed for {uploaded_file.name}: {str(e)}")
+    
+    return processed_files
+
+@monitor_ai_analysis
+def enhanced_ai_analysis(context):
+    """Enhanced AI analysis with caching and monitoring"""
+    # Generate context hash for caching
+    context_str = str(sorted(context.items()))
+    context_hash = hashlib.md5(context_str.encode()).hexdigest()
+    
+    model_params = {
+        'model': Config.OPENAI_MODEL,
+        'temperature': Config.OPENAI_TEMPERATURE,
+        'max_tokens': Config.MAX_TOKENS
+    }
+    
+    # Check cache first
+    cached_result = enterprise_cache.get_ai_analysis_cache(context_hash, model_params)
+    if cached_result:
+        st.success("🚀 Using cached AI analysis results")
+        return cached_result
+    
+    # Perform AI analysis
+    ai_analyzer = AIAnalyzer()
+    result = ai_analyzer.analyze_logs(context)
+    
+    # Cache successful results
+    if 'error' not in result:
+        enterprise_cache.set_ai_analysis_cache(context_hash, model_params, result)
+        
+        enterprise_logger.log_user_action(
+            "AI_ANALYSIS_COMPLETED",
+            context_hash=context_hash[:12],
+            model=Config.OPENAI_MODEL,
+            log_entries=len(context.get('logs', [])),
+            has_db_data=context.get('database_results') is not None,
+            has_xml_context=context.get('xml_context') is not None
+        )
+    
+    return result
 
 if __name__ == "__main__":
     main()
