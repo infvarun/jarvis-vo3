@@ -8,9 +8,31 @@ from typing import Dict, List, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 try:
-    from langchain_community.tools import DuckDuckGoSearchRun
+    from ddgs import DDGS
+    # Create a simple wrapper class that mimics DuckDuckGoSearchRun interface
+    class DDGSSearchRun:
+        def __init__(self):
+            self.ddgs = DDGS()
+        
+        def run(self, query: str) -> str:
+            try:
+                results = list(self.ddgs.text(query, max_results=5))
+                if results:
+                    formatted_results = []
+                    for result in results:
+                        title = result.get('title', 'No title')
+                        body = result.get('body', 'No description')
+                        url = result.get('href', '')
+                        formatted_results.append(f"**{title}**\n{body}\nURL: {url}\n")
+                    return "\n".join(formatted_results)
+                else:
+                    return "No search results found"
+            except Exception as e:
+                return f"Search error: {str(e)}"
+    
+    DuckDuckGoSearchRun = DDGSSearchRun
 except ImportError:
-    # Fallback if DuckDuckGoSearchRun has issues
+    # Fallback if ddgs is not available
     DuckDuckGoSearchRun = None
 
 from utils.logger import enterprise_logger
@@ -135,7 +157,7 @@ Provide your thinking process and decide if web search is needed (YES/NO)."""
             search_results = self.search_tool.run(search_query)
             enterprise_logger.log_user_action("WEB_SEARCH_PERFORMED", 
                                             query=search_query, 
-                                            results_length=len(search_results))
+                                            results_length=len(str(search_results)))
             return search_results
         except Exception as e:
             enterprise_logger.log_error(e, "Web search failed")
