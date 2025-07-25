@@ -147,9 +147,6 @@ def main():
     
     with tab5:
         handle_war_room()
-    
-    # Enterprise features sidebar
-    display_enterprise_sidebar()
 
 def handle_file_uploads():
     st.header("File Upload")
@@ -627,63 +624,7 @@ def initialize_enterprise_features():
     if 'war_room_agent' not in st.session_state:
         st.session_state.war_room_agent = SimpleWarRoomAgent()
 
-def display_enterprise_sidebar():
-    """Display enterprise monitoring sidebar"""
-    with st.sidebar:
-        st.markdown("### 🏢 Enterprise Dashboard")
-        
-        # System metrics
-        with st.expander("📊 System Metrics"):
-            metrics = performance_monitor.get_system_metrics()
-            if metrics:
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Memory Usage", f"{metrics.get('memory_usage_percent', 0):.1f}%")
-                    st.metric("CPU Usage", f"{metrics.get('cpu_usage_percent', 0):.1f}%")
-                with col2:
-                    st.metric("Memory Available", f"{metrics.get('memory_available_gb', 0):.1f} GB")
-                    st.metric("CPU Cores", f"{metrics.get('cpu_count', 0)}")
-        
-        # Performance metrics
-        with st.expander("⚡ Performance Metrics"):
-            perf_summary = performance_monitor.get_performance_summary()
-            if perf_summary:
-                for operation, stats in perf_summary.items():
-                    st.write(f"**{operation.replace('_', ' ').title()}**")
-                    st.write(f"- Success Rate: {stats['success_rate']:.1f}%")
-                    st.write(f"- Avg Duration: {stats['avg_duration']:.2f}s")
-                    st.write(f"- Total Calls: {stats['total_calls']}")
-            else:
-                st.info("No performance data available yet")
-        
-        # Cache statistics
-        with st.expander("💾 Cache Statistics"):
-            cache_stats = enterprise_cache.get_cache_stats()
-            if cache_stats['total_entries'] > 0:
-                st.metric("Cache Entries", cache_stats['total_entries'])
-                st.metric("Hit Rate", f"{cache_stats['hit_rate_percent']:.1f}%")
-                st.metric("Cache Size", f"{cache_stats['estimated_size_bytes'] / 1024:.1f} KB")
-                
-                if st.button("🗑️ Clear Cache"):
-                    enterprise_cache.clear_expired_cache()
-                    st.success("Cache cleared!")
-                    st.rerun()
-            else:
-                st.info("No cache data available")
-        
-        # Configuration status
-        with st.expander("⚙️ Configuration"):
-            config_validation = Config.validate_config()
-            for var, is_valid in config_validation.items():
-                status = "✅" if is_valid else "❌"
-                st.write(f"{status} {var}")
-        
-        # Security status
-        with st.expander("🔒 Security Status"):
-            st.write("✅ File validation enabled")
-            st.write("✅ SQL injection protection")
-            st.write("✅ Session management active")
-            st.write("✅ Audit logging enabled")
+
 
 @monitor_file_processing
 def enhanced_file_upload_handler(uploaded_files):
