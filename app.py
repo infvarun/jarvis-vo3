@@ -110,6 +110,8 @@ def main():
         st.session_state.db_data = None
     if 'xml_context' not in st.session_state:
         st.session_state.xml_context = None
+    if 'problem_statement' not in st.session_state:
+        st.session_state.problem_statement = None
 
     # Create tabs with custom HTML icons
     st.markdown("""
@@ -151,10 +153,28 @@ def main():
 def handle_file_uploads():
     st.header("File Upload")
     
+    # Problem Statement Section (Top Priority)
+    st.subheader("🎯 Problem Statement (Optional)")
+    problem_statement = st.text_area(
+        "Describe the specific issue you're investigating:",
+        height=120,
+        placeholder="Example: 'Application crashes during user login process' or 'Database connection timeouts in production' or 'Memory leaks in microservice deployment'...",
+        help="Providing a problem statement helps narrow down the AI analysis to focus on relevant log patterns and issues. This enables semantic search-based filtering to find the most relevant log entries.",
+        key="problem_statement_input"
+    )
+    
+    if problem_statement and problem_statement.strip():
+        st.session_state.problem_statement = problem_statement.strip()
+        st.success("🎯 Problem statement captured - analysis will be focused on this issue")
+    elif problem_statement == "":
+        st.session_state.problem_statement = None
+    
+    st.divider()
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Log Files")
+        st.subheader("📁 Log Files")
         log_files = st.file_uploader(
             "Upload log files (txt, log)",
             type=['txt', 'log'],
@@ -176,10 +196,14 @@ def handle_file_uploads():
             
             if log_data:
                 st.session_state.log_data = log_data
-                st.info(f"Total log entries loaded: {len(log_data)}")
+                st.info(f"📊 Total log entries loaded: {len(log_data)}")
+                
+                # Show semantic filtering info if problem statement exists
+                if st.session_state.problem_statement:
+                    st.info(f"🔍 Analysis will be focused on: '{st.session_state.problem_statement[:100]}{'...' if len(st.session_state.problem_statement) > 100 else ''}'")
     
     with col2:
-        st.subheader("XML Context Files (Optional)")
+        st.subheader("📄 XML Context Files (Optional)")
         xml_files = st.file_uploader(
             "Upload XML context files (up to 2)",
             type=['xml'],
@@ -346,7 +370,8 @@ def handle_analysis():
                     context = {
                         'logs': filtered_logs,
                         'database_results': st.session_state.db_data,
-                        'xml_context': st.session_state.xml_context
+                        'xml_context': st.session_state.xml_context,
+                        'problem_statement': st.session_state.problem_statement
                     }
                     
                     # Use enhanced AI analysis with caching
@@ -734,6 +759,11 @@ def handle_war_room():
     if 'war_room_messages' not in st.session_state:
         st.session_state.war_room_messages = []
     
+    # Problem statement display (if available)
+    if st.session_state.get('problem_statement'):
+        st.info(f"🎯 **Active Problem Statement:** {st.session_state.problem_statement}")
+        st.write("*The AI agent will focus its analysis on this specific issue.*")
+    
     # Context panel
     with st.expander("📊 Available Context", expanded=False):
         col1, col2, col3 = st.columns(3)
@@ -861,7 +891,8 @@ def handle_war_room():
         context = {
             "logs": st.session_state.get('log_data', []),
             "database_results": st.session_state.get('db_data'),
-            "xml_context": st.session_state.get('xml_context')
+            "xml_context": st.session_state.get('xml_context'),
+            "problem_statement": st.session_state.get('problem_statement')
         }
         
         # Create a placeholder for real-time thinking display

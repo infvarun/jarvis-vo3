@@ -11,6 +11,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 **July 25, 2025**
+- Added optional problem statement input box on File Upload screen for targeted analysis:
+  - Semantic search-based analysis narrowing functionality in AI analyzer
+  - Problem statement filtering that identifies relevant logs using keyword matching and pattern recognition
+  - Enhanced AI analysis prompts to focus specifically on user-provided problem statements
+  - War Room agent integration with problem statement for focused troubleshooting
+  - Visual indicators showing when problem-focused analysis is active
+  - Intelligent scoring system for log relevance based on problem keywords and error patterns
 - Implemented "War Room" agentic chat feature using LangGraph:
   - Intelligent agent that can analyze logs, query databases, and search for solutions
   - LangGraph-based workflow with thinking/reflection capabilities for refined responses

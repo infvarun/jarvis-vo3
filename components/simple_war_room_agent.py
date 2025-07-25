@@ -65,6 +65,11 @@ class SimpleWarRoomAgent:
         """Prepare a summary of available context for the LLM"""
         summary_parts = []
         
+        # Add problem statement if available
+        if context.get("problem_statement"):
+            summary_parts.append(f"PROBLEM STATEMENT: {context['problem_statement']}")
+            summary_parts.append("(Focus analysis on this specific issue)")
+        
         logs = context.get("logs", [])
         if logs:
             summary_parts.append(f"Log Data: {len(logs)} entries")
@@ -113,7 +118,13 @@ Focus on practical troubleshooting and root cause analysis."""
         
         try:
             response = self.llm.invoke(messages)
-            return response.content if hasattr(response, 'content') else str(response)
+            content = getattr(response, 'content', None)
+            if isinstance(content, str):
+                return content
+            elif content is not None:
+                return str(content)
+            else:
+                return str(response)
         except Exception as e:
             enterprise_logger.log_error(e, "Initial analysis failed")
             return f"Error during initial analysis: {str(e)}"
@@ -135,7 +146,13 @@ Provide your thinking process and decide if web search is needed (YES/NO)."""
         
         try:
             thinking_response = self.llm.invoke([HumanMessage(content=thinking_prompt)])
-            thinking_content = thinking_response.content if hasattr(thinking_response, 'content') else str(thinking_response)
+            content = getattr(thinking_response, 'content', None)
+            if isinstance(content, str):
+                thinking_content = content
+            elif content is not None:
+                thinking_content = str(content)
+            else:
+                thinking_content = str(thinking_response)
             
             # Determine if search is needed based on thinking
             search_indicators = ["YES", "web search", "stackoverflow", "documentation", "additional information"]
@@ -183,7 +200,13 @@ Format the response clearly with sections for different types of information."""
         
         try:
             final_response = self.llm.invoke([HumanMessage(content=synthesis_prompt)])
-            return final_response.content if hasattr(final_response, 'content') else str(final_response)
+            content = getattr(final_response, 'content', None)
+            if isinstance(content, str):
+                return content
+            elif content is not None:
+                return str(content)
+            else:
+                return str(final_response)
         except Exception as e:
             enterprise_logger.log_error(e, "Synthesis failed")
             return f"Synthesis error: {str(e)}"

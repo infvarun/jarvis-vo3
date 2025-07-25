@@ -147,22 +147,37 @@ Focus on actionable insights and be specific about timestamps, error patterns, a
         Build the analysis prompt with all available context
         
         Args:
-            context: Dictionary containing logs, database results, and XML context
+            context: Dictionary containing logs, database results, XML context, and optional problem statement
             
         Returns:
             Formatted prompt string
         """
         prompt_parts = []
         
-        # Add log data
+        # Add problem statement for focused analysis if provided
+        if context.get('problem_statement'):
+            problem = context['problem_statement']
+            prompt_parts.append("## PROBLEM STATEMENT (PRIORITY FOCUS)")
+            prompt_parts.append(f"**Issue to investigate:** {problem}")
+            prompt_parts.append("\n**INSTRUCTION:** Focus your analysis specifically on log entries and patterns related to the above problem statement. Use semantic analysis to identify relevant logs, even if they don't contain exact keywords. Prioritize findings that could explain or relate to this specific issue.")
+        
+        # Add log data with semantic filtering if problem statement exists
         logs = context.get('logs', [])
         if logs:
-            prompt_parts.append("## LOG DATA")
-            prompt_parts.append(f"Total log entries: {len(logs)}")
+            if context.get('problem_statement'):
+                # Apply semantic filtering for relevant logs
+                filtered_logs = self._semantic_filter_logs(logs, context['problem_statement'])
+                prompt_parts.append(f"\n## FILTERED LOG DATA (PROBLEM-FOCUSED)")
+                prompt_parts.append(f"Showing {len(filtered_logs)} most relevant entries out of {len(logs)} total, filtered for the problem statement.")
+                logs_to_analyze = filtered_logs
+            else:
+                prompt_parts.append("\n## LOG DATA")
+                prompt_parts.append(f"Total log entries: {len(logs)}")
+                logs_to_analyze = logs
             
             # Group logs by level for better organization
             log_levels = {}
-            for log in logs:
+            for log in logs_to_analyze:
                 level = log.get('level', 'UNKNOWN').upper()
                 if level not in log_levels:
                     log_levels[level] = []
@@ -178,7 +193,7 @@ Focus on actionable insights and be specific about timestamps, error patterns, a
                         prompt_parts.append(f"[{timestamp}] [{component}] {message}")
             
             # Add sample of other logs
-            other_logs = [log for log in logs if log.get('level', '').upper() not in ['ERROR', 'CRITICAL', 'FATAL', 'WARN', 'WARNING']]
+            other_logs = [log for log in logs_to_analyze if log.get('level', '').upper() not in ['ERROR', 'CRITICAL', 'FATAL', 'WARN', 'WARNING']]
             if other_logs:
                 prompt_parts.append(f"\n### OTHER LOGS (sample of {min(10, len(other_logs))} entries)")
                 for log in other_logs[:10]:
@@ -228,6 +243,80 @@ Focus on actionable insights and be specific about timestamps, error patterns, a
             prompt_parts.append("7. Use XML context to better understand system configuration and behavior")
         
         return "\n".join(prompt_parts)
+    
+    def _semantic_filter_logs(self, logs: List[Dict[str, Any]], problem_statement: str) -> List[Dict[str, Any]]:
+        """
+        Filter logs based on semantic relevance to the problem statement
+        
+        Args:
+            logs: List of log entries
+            problem_statement: The problem description to filter against
+            
+        Returns:
+            List of filtered log entries most relevant to the problem
+        """
+        # Keywords extraction and scoring
+        problem_keywords = self._extract_keywords(problem_statement.lower())
+        
+        scored_logs = []
+        for log_entry in logs:
+            score = self._calculate_relevance_score(log_entry, problem_keywords, problem_statement)
+            if score > 0:  # Only include logs with some relevance
+                scored_logs.append((score, log_entry))
+        
+        # Sort by relevance score (highest first) and return top entries
+        scored_logs.sort(key=lambda x: x[0], reverse=True)
+        
+        # Return top 200 most relevant logs, or all if fewer than 200
+        max_relevant_logs = min(200, len(scored_logs))
+        return [log_entry for _, log_entry in scored_logs[:max_relevant_logs]]
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """Extract important keywords from problem statement"""
+        import re
+        
+        # Remove common stopwords but keep technical terms
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'this', 'that', 'these', 'those'}
+        
+        # Split into words and filter
+        words = re.findall(r'\b\w+\b', text.lower())
+        keywords = [word for word in words if len(word) > 2 and word not in stopwords]
+        
+        return keywords
+    
+    def _calculate_relevance_score(self, log_entry: Dict[str, Any], keywords: List[str], problem_statement: str) -> float:
+        """Calculate relevance score for a log entry"""
+        score = 0.0
+        message = log_entry.get('message', '').lower()
+        component = log_entry.get('component', '').lower()
+        level = log_entry.get('level', '').lower()
+        
+        # Exact keyword matches in message (highest weight)
+        for keyword in keywords:
+            if keyword in message:
+                score += 3.0
+            if keyword in component:
+                score += 2.0
+        
+        # Error level relevance
+        if level in ['error', 'fatal', 'critical'] and any(word in problem_statement.lower() for word in ['error', 'crash', 'fail', 'timeout', 'exception']):
+            score += 2.0
+        elif level in ['warn', 'warning'] and 'warning' in problem_statement.lower():
+            score += 1.5
+        
+        # Pattern matching for common issues
+        if 'timeout' in problem_statement.lower() and any(word in message for word in ['timeout', 'time out', 'timed out']):
+            score += 4.0
+        if 'memory' in problem_statement.lower() and any(word in message for word in ['memory', 'heap', 'oom', 'outofmemory']):
+            score += 4.0
+        if 'connection' in problem_statement.lower() and any(word in message for word in ['connection', 'connect', 'socket', 'network']):
+            score += 4.0
+        if 'database' in problem_statement.lower() and any(word in message for word in ['database', 'db', 'sql', 'query']):
+            score += 4.0
+        if any(word in problem_statement.lower() for word in ['crash', 'exception', 'error']) and any(word in message for word in ['exception', 'error', 'failed', 'crash']):
+            score += 4.0
+        
+        return score
     
     def _format_logs_for_analysis(self, logs: List[Dict[str, Any]]) -> str:
         """
