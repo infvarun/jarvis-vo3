@@ -16,7 +16,8 @@ Preferred communication style: Simple, everyday language.
   - LangGraph-based workflow with thinking/reflection capabilities for refined responses
   - Web search integration (StackOverflow) for technical solutions and documentation
   - Context-aware chat that understands available log files, database results, and XML data
-  - Visual thinking process display showing agent's reasoning steps
+  - Real-time thinking process display showing agent's reasoning steps as they happen
+  - Progress tracking with 4-step workflow visualization during processing
   - Quick suggestion buttons for common troubleshooting scenarios
   - Chat history with export functionality and conversation memory
 - Implemented comprehensive enterprise-grade features for production deployment:

@@ -923,30 +923,51 @@ def handle_war_room():
             "xml_context": st.session_state.get('xml_context')
         }
         
-        # Show processing message
-        with st.spinner("🤖 Agent is thinking and analyzing..."):
-            try:
-                # Get response from War Room agent
-                agent_response = st.session_state.war_room_agent.chat(user_input, context)
-                
-                # Add agent response to history
-                st.session_state.war_room_messages.append({
-                    "role": "assistant",
-                    "content": agent_response.get("response", "No response generated"),
-                    "thinking": agent_response.get("thinking_process", ""),
-                    "used_web_search": agent_response.get("used_web_search", False),
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                })
-                
-                # Set flag to clear input on next render
-                st.session_state.message_sent = True
-                
-                st.success("✅ Response generated!")
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
-                enterprise_logger.log_error(e, "War Room chat error")
+        # Create a placeholder for real-time thinking display
+        thinking_placeholder = st.empty()
+        progress_placeholder = st.empty()
+        
+        try:
+            # Show initial thinking status
+            with thinking_placeholder.container():
+                st.info("🧠 **Agent Thinking Process:**")
+                thinking_display = st.empty()
+                thinking_display.write("💭 Processing your question and gathering context...")
+            
+            with progress_placeholder.container():
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                status_text.text("Step 1/4: Analyzing question and context")
+            
+            # Get response from War Room agent with real-time updates
+            agent_response = st.session_state.war_room_agent.chat_with_updates(
+                user_input, context, thinking_display, progress_bar, status_text
+            )
+            
+            # Clear the thinking placeholders
+            thinking_placeholder.empty()
+            progress_placeholder.empty()
+            
+            # Add agent response to history
+            st.session_state.war_room_messages.append({
+                "role": "assistant",
+                "content": agent_response.get("response", "No response generated"),
+                "thinking": agent_response.get("thinking_process", ""),
+                "used_web_search": agent_response.get("used_web_search", False),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            
+            # Set flag to clear input on next render
+            st.session_state.message_sent = True
+            
+            st.success("✅ Response generated!")
+            st.rerun()
+            
+        except Exception as e:
+            thinking_placeholder.empty()
+            progress_placeholder.empty()
+            st.error(f"Error: {str(e)}")
+            enterprise_logger.log_error(e, "War Room chat error")
     elif send_clicked:
         st.warning("Please enter a message first")
     

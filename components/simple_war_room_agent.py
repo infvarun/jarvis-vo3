@@ -166,6 +166,112 @@ Format the response clearly with sections for different types of information."""
             enterprise_logger.log_error(e, "Synthesis failed")
             return f"Synthesis error: {str(e)}"
     
+    def _update_thinking_display(self, thinking_display, message: str, delay: float = 0.5):
+        """Update the thinking display with new message"""
+        try:
+            import time
+            thinking_display.write(f"💭 {message}")
+            time.sleep(delay)
+        except:
+            pass  # If display update fails, continue silently
+    
+    def chat_with_updates(self, user_message: str, context: Dict[str, Any], 
+                         thinking_display=None, progress_bar=None, status_text=None) -> Dict[str, Any]:
+        """Chat with real-time thinking updates"""
+        
+        # Add user message to conversation history
+        self.conversation_history.append({
+            "role": "user",
+            "content": user_message,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        try:
+            # Step 1: Initial analysis
+            if thinking_display:
+                self._update_thinking_display(thinking_display, "Analyzing your question and available log data...")
+            if progress_bar:
+                progress_bar.progress(0.25)
+            if status_text:
+                status_text.text("Step 1/4: Initial analysis of logs and context")
+            
+            initial_response = self._perform_initial_analysis(user_message, context)
+            
+            # Step 2: Thinking and reflection
+            if thinking_display:
+                self._update_thinking_display(thinking_display, "Reflecting on analysis quality and identifying gaps...")
+            if progress_bar:
+                progress_bar.progress(0.5)
+            if status_text:
+                status_text.text("Step 2/4: Self-reflection and improvement")
+            
+            thinking, search_needed = self._perform_thinking_reflection(user_message, initial_response)
+            
+            # Step 3: Web search if needed
+            search_results = None
+            if search_needed:
+                if thinking_display:
+                    self._update_thinking_display(thinking_display, "Searching StackOverflow for additional technical solutions...")
+                if progress_bar:
+                    progress_bar.progress(0.75)
+                if status_text:
+                    status_text.text("Step 3/4: Searching for additional solutions")
+                search_results = self._perform_web_search(user_message)
+            else:
+                if progress_bar:
+                    progress_bar.progress(0.75)
+                if status_text:
+                    status_text.text("Step 3/4: Skipping web search (not needed)")
+            
+            # Step 4: Synthesize final response
+            if thinking_display:
+                self._update_thinking_display(thinking_display, "Synthesizing all information into comprehensive response...")
+            if progress_bar:
+                progress_bar.progress(1.0)
+            if status_text:
+                status_text.text("Step 4/4: Creating final response")
+            
+            final_response = self._synthesize_response(user_message, initial_response, thinking, search_results)
+            
+            # Prepare response
+            formatted_response = {
+                "response": final_response,
+                "thinking_process": thinking,
+                "used_web_search": bool(search_results),
+                "timestamp": datetime.now().isoformat(),
+                "error": False
+            }
+            
+            # Add to conversation history
+            self.conversation_history.append({
+                "role": "assistant",
+                "content": formatted_response["response"],
+                "thinking": thinking,
+                "used_web_search": bool(search_results),
+                "timestamp": formatted_response["timestamp"]
+            })
+            
+            return formatted_response
+            
+        except Exception as e:
+            enterprise_logger.log_error(e, "War Room agent chat failed")
+            error_response = {
+                "response": f"I encountered an error processing your request: {str(e)}",
+                "thinking_process": "Error occurred during processing",
+                "used_web_search": False,
+                "timestamp": datetime.now().isoformat(),
+                "error": True
+            }
+            
+            self.conversation_history.append({
+                "role": "assistant",
+                "content": error_response["response"],
+                "timestamp": error_response["timestamp"],
+                "error": True
+            })
+            
+            return error_response
+    
     @monitor_ai_analysis
     def chat(self, user_message: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Main chat interface for the War Room agent"""
