@@ -16,6 +16,9 @@ from utils.security import security_manager
 from utils.performance import performance_monitor, monitor_ai_analysis, monitor_file_processing
 from utils.cache import enterprise_cache
 
+# War Room Agent
+from components.simple_war_room_agent import SimpleWarRoomAgent
+
 # Configure page
 st.set_page_config(
     page_title="Log Analysis Tool",
@@ -122,11 +125,12 @@ def main():
     """, unsafe_allow_html=True)
     
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📁 File Upload", 
         "🗃️ Database Query", 
         "⚙️ Analysis", 
-        "📊 Results"
+        "📊 Results",
+        "🚨 War Room"
     ])
     
     with tab1:
@@ -140,6 +144,9 @@ def main():
     
     with tab4:
         display_results()
+    
+    with tab5:
+        handle_war_room()
     
     # Enterprise features sidebar
     display_enterprise_sidebar()
@@ -615,6 +622,10 @@ def initialize_enterprise_features():
     if not security_manager.validate_session_token(st.session_state.session_token):
         st.session_state.session_token = security_manager.generate_session_token()
         enterprise_logger.log_security_event("SESSION_RENEWED")
+    
+    # Initialize War Room agent
+    if 'war_room_agent' not in st.session_state:
+        st.session_state.war_room_agent = SimpleWarRoomAgent()
 
 def display_enterprise_sidebar():
     """Display enterprise monitoring sidebar"""
@@ -765,6 +776,195 @@ def enhanced_ai_analysis(context):
         )
     
     return result
+
+def handle_war_room():
+    """Handle War Room agentic chat interface"""
+    st.markdown("### 🚨 War Room - Intelligent Troubleshooting Chat")
+    st.markdown("**Chat with an AI agent that can analyze your logs, query databases, and search for solutions**")
+    
+    # Check if API key is available
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        st.error("🔐 OpenAI API key required for War Room. Please set OPENAI_API_KEY in your Replit secrets.")
+        st.info("💡 Go to the Secrets tab in Replit and add OPENAI_API_KEY with your OpenAI API key.")
+        return
+    
+    # Initialize chat history if not exists
+    if 'war_room_messages' not in st.session_state:
+        st.session_state.war_room_messages = []
+    
+    # Context panel
+    with st.expander("📊 Available Context", expanded=False):
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            log_data = st.session_state.get('log_data', [])
+            logs_status = "✅" if log_data else "❌"
+            log_count = len(log_data) if log_data else 0
+            st.write(f"{logs_status} **Log Files**")
+            if log_count > 0:
+                st.write(f"└ {log_count:,} entries available")
+            else:
+                st.write("└ No log data loaded")
+        
+        with col2:
+            db_status = "✅" if st.session_state.get('db_data') else "❌"
+            st.write(f"{db_status} **Database Results**")
+            if st.session_state.get('db_data'):
+                db_count = len(st.session_state.db_data) if isinstance(st.session_state.db_data, list) else 1
+                st.write(f"└ {db_count} result(s) available")
+            else:
+                st.write("└ No database results")
+        
+        with col3:
+            xml_status = "✅" if st.session_state.get('xml_context') else "❌"
+            st.write(f"{xml_status} **XML Context**")
+            if st.session_state.get('xml_context'):
+                st.write("└ Configuration data available")
+            else:
+                st.write("└ No XML context loaded")
+    
+    # Chat interface
+    st.markdown("---")
+    
+    # Display chat history
+    if st.session_state.war_room_messages:
+        st.markdown("### 💬 Conversation History")
+        
+        for message in st.session_state.war_room_messages:
+            if message["role"] == "user":
+                with st.chat_message("user"):
+                    st.write(message["content"])
+            else:
+                with st.chat_message("assistant"):
+                    # Show thinking process if available
+                    if message.get("thinking") and message["thinking"].strip():
+                        with st.expander("💭 Agent Thinking Process", expanded=False):
+                            st.write(message["thinking"])
+                    
+                    # Show if web search was used
+                    if message.get("used_web_search"):
+                        st.info("🔍 Used web search for additional technical information")
+                    
+                    # Show main response
+                    st.write(message["content"])
+                    
+                    # Show timestamp
+                    if message.get("timestamp"):
+                        st.caption(f"⏰ {message['timestamp']}")
+    
+    # Input area
+    st.markdown("### 💬 Ask the Agent")
+    
+    # Quick suggestion buttons
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("🔍 Analyze Errors"):
+            suggested_query = "What are the main errors in the logs and how can I fix them?"
+            st.session_state.suggested_query = suggested_query
+    
+    with col2:
+        if st.button("📊 Performance Issues"):
+            suggested_query = "Are there any performance issues or bottlenecks in the system?"
+            st.session_state.suggested_query = suggested_query
+    
+    with col3:
+        if st.button("🔧 Root Cause Analysis"):
+            suggested_query = "What is the root cause of the recent failures?"
+            st.session_state.suggested_query = suggested_query
+    
+    with col4:
+        if st.button("💡 Recommendations"):
+            suggested_query = "What are your recommendations to improve system stability?"
+            st.session_state.suggested_query = suggested_query
+    
+    # Chat input
+    user_input = st.text_area(
+        "Your question:",
+        value=st.session_state.get('suggested_query', ''),
+        placeholder="Ask about logs, errors, performance issues, or troubleshooting steps...",
+        height=100,
+        key="war_room_input"
+    )
+    
+    # Clear suggested query after displaying
+    if 'suggested_query' in st.session_state:
+        del st.session_state.suggested_query
+    
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        if st.button("🚀 Send Message", type="primary", use_container_width=True):
+            if user_input.strip():
+                # Add user message to history
+                st.session_state.war_room_messages.append({
+                    "role": "user",
+                    "content": user_input,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                
+                # Prepare context for agent
+                context = {
+                    "logs": st.session_state.get('log_data', []),
+                    "database_results": st.session_state.get('db_data'),
+                    "xml_context": st.session_state.get('xml_context')
+                }
+                
+                # Show processing message
+                with st.spinner("🤖 Agent is thinking and analyzing..."):
+                    try:
+                        # Get response from War Room agent
+                        agent_response = st.session_state.war_room_agent.chat(user_input, context)
+                        
+                        # Add agent response to history
+                        st.session_state.war_room_messages.append({
+                            "role": "assistant",
+                            "content": agent_response.get("response", "No response generated"),
+                            "thinking": agent_response.get("thinking_process", ""),
+                            "used_web_search": agent_response.get("used_web_search", False),
+                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        })
+                        
+                        st.success("✅ Response generated!")
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+                        enterprise_logger.log_error(e, "War Room chat error")
+            else:
+                st.warning("Please enter a message first")
+    
+    with col2:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            st.session_state.war_room_messages = []
+            if hasattr(st.session_state, 'war_room_agent'):
+                st.session_state.war_room_agent.clear_conversation()
+            st.success("Chat cleared!")
+            st.rerun()
+    
+    with col3:
+        if st.button("📤 Export Chat", use_container_width=True):
+            if st.session_state.war_room_messages:
+                chat_export = {
+                    "export_timestamp": datetime.now().isoformat(),
+                    "conversation": st.session_state.war_room_messages,
+                    "context_summary": {
+                        "logs_available": bool(st.session_state.get('log_data')),
+                        "log_count": len(st.session_state.get('log_data') or []),
+                        "database_results_available": bool(st.session_state.get('db_data')),
+                        "xml_context_available": bool(st.session_state.get('xml_context'))
+                    }
+                }
+                
+                st.download_button(
+                    label="⬇️ Download Chat History",
+                    data=json.dumps(chat_export, indent=2),
+                    file_name=f"war_room_chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
+                )
+            else:
+                st.info("No chat history to export")
 
 if __name__ == "__main__":
     main()
