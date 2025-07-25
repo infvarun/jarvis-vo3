@@ -879,18 +879,28 @@ def handle_war_room():
             suggested_query = "What are your recommendations to improve system stability?"
             st.session_state.suggested_query = suggested_query
     
+    # Initialize message sent flag
+    if 'message_sent' not in st.session_state:
+        st.session_state.message_sent = False
+    
+    # Reset input value if message was just sent
+    input_value = ""
+    if st.session_state.get('suggested_query'):
+        input_value = st.session_state.suggested_query
+        # Clear suggested query after using
+        del st.session_state.suggested_query
+    elif st.session_state.message_sent:
+        input_value = ""
+        st.session_state.message_sent = False
+    
     # Chat input
     user_input = st.text_area(
         "Your question:",
-        value=st.session_state.get('suggested_query', ''),
+        value=input_value,
         placeholder="Ask about logs, errors, performance issues, or troubleshooting steps...",
         height=100,
-        key="war_room_input"
+        key="war_room_input_area"
     )
-    
-    # Clear suggested query after displaying
-    if 'suggested_query' in st.session_state:
-        del st.session_state.suggested_query
     
     col1, col2, col3 = st.columns([2, 1, 1])
     
@@ -898,55 +908,52 @@ def handle_war_room():
         send_clicked = st.button("🚀 Send Message", type="primary", use_container_width=True)
         
     # Process the message if button is clicked and there's input
-    if send_clicked:
-        # Get the current value from the text area
-        current_input = st.session_state.get("war_room_input", "")
-        if current_input and current_input.strip():
-            # Add user message to history
-            st.session_state.war_room_messages.append({
-                "role": "user",
-                "content": current_input,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            })
-            
-            # Prepare context for agent
-            context = {
-                "logs": st.session_state.get('log_data', []),
-                "database_results": st.session_state.get('db_data'),
-                "xml_context": st.session_state.get('xml_context')
-            }
-            
-            # Show processing message
-            with st.spinner("🤖 Agent is thinking and analyzing..."):
-                try:
-                    # Get response from War Room agent
-                    agent_response = st.session_state.war_room_agent.chat(current_input, context)
-                    
-                    # Add agent response to history
-                    st.session_state.war_room_messages.append({
-                        "role": "assistant",
-                        "content": agent_response.get("response", "No response generated"),
-                        "thinking": agent_response.get("thinking_process", ""),
-                        "used_web_search": agent_response.get("used_web_search", False),
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    })
-                    
-                    # Clear the input field after sending
-                    st.session_state.war_room_input = ""
-                    
-                    st.success("✅ Response generated!")
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-                    enterprise_logger.log_error(e, "War Room chat error")
-        else:
-            st.warning("Please enter a message first")
+    if send_clicked and user_input and user_input.strip():
+        # Add user message to history
+        st.session_state.war_room_messages.append({
+            "role": "user",
+            "content": user_input,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        
+        # Prepare context for agent
+        context = {
+            "logs": st.session_state.get('log_data', []),
+            "database_results": st.session_state.get('db_data'),
+            "xml_context": st.session_state.get('xml_context')
+        }
+        
+        # Show processing message
+        with st.spinner("🤖 Agent is thinking and analyzing..."):
+            try:
+                # Get response from War Room agent
+                agent_response = st.session_state.war_room_agent.chat(user_input, context)
+                
+                # Add agent response to history
+                st.session_state.war_room_messages.append({
+                    "role": "assistant",
+                    "content": agent_response.get("response", "No response generated"),
+                    "thinking": agent_response.get("thinking_process", ""),
+                    "used_web_search": agent_response.get("used_web_search", False),
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                
+                # Set flag to clear input on next render
+                st.session_state.message_sent = True
+                
+                st.success("✅ Response generated!")
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+                enterprise_logger.log_error(e, "War Room chat error")
+    elif send_clicked:
+        st.warning("Please enter a message first")
     
     with col2:
         if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state.war_room_messages = []
-            st.session_state.war_room_input = ""  # Clear input field too
+            st.session_state.message_sent = True  # This will clear input on next render
             if hasattr(st.session_state, 'war_room_agent'):
                 st.session_state.war_room_agent.clear_conversation()
             st.success("Chat cleared!")

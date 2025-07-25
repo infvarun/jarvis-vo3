@@ -17,4 +17,5 @@ dependencies = [
     "duckduckgo-search>=8.1.1",
     "beautifulsoup4>=4.13.4",
     "markdown>=3.8.2",
+    "ddgs>=9.4.3",
 ]

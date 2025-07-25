@@ -7,7 +7,11 @@ from typing import Dict, List, Any, Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_community.tools import DuckDuckGoSearchRun
+try:
+    from langchain_community.tools import DuckDuckGoSearchRun
+except ImportError:
+    # Fallback if DuckDuckGoSearchRun has issues
+    DuckDuckGoSearchRun = None
 
 from utils.logger import enterprise_logger
 from utils.performance import monitor_ai_analysis
@@ -24,7 +28,10 @@ class SimpleWarRoomAgent:
         
         # Web search tool for StackOverflow and technical documentation
         try:
-            self.search_tool = DuckDuckGoSearchRun()
+            if DuckDuckGoSearchRun:
+                self.search_tool = DuckDuckGoSearchRun()
+            else:
+                self.search_tool = None
         except Exception as e:
             enterprise_logger.log_error(e, "Web search tool initialization failed")
             self.search_tool = None
