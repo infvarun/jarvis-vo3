@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Log Analysis Tool - Enterprise Solution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Section */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e3c);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Content Sections */
+        .section {
+            padding: 4rem 0;
+            background: white;
+        }
+
+        .section:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #2d3748;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Architecture Diagram */
+        .architecture-section {
+            text-align: center;
+        }
+
+        .architecture-diagram {
+            max-width: 100%;
+            height: auto;
+            margin: 2rem auto;
+        }
+
+        /* Benefits Section */
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .benefit-icon {
+            flex-shrink: 0;
+        }
+
+        .benefit-text {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        /* ROI Section */
+        .roi-section {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-align: center;
+        }
+
+        .roi-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .roi-stat {
+            text-align: center;
+        }
+
+        .roi-number {
+            font-size: 3rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .roi-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1.1rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1" fill="url(#gradient1)"/>
+                        <defs>
+                            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366f1"/>
+                                <stop offset="100%" style="stop-color:#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div>
+                        <h1 class="main-title">Log Analysis Tool</h1>
+                        <p class="subtitle">AI-Powered Enterprise Troubleshooting</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="fade-in">Transform Your IT Operations</h1>
+            <p class="fade-in">Revolutionary AI-powered log analysis tool that reduces troubleshooting time by 85% and prevents critical system failures before they happen.</p>
+            <a href="#features" class="cta-button fade-in">Discover the Solution</a>
+        </div>
+    </section>
+
+    <!-- Key Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <h2 class="section-title">Revolutionary Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="url(#aiGradient)"/>
+                            <circle cx="12" cy="12" r="3" fill="white"/>
+                            <defs>
+                                <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#ff6b6b"/>
+                                    <stop offset="100%" style="stop-color:#ff8e3c"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">War Room AI Agent</h3>
+                    <p class="feature-description">Intelligent AI agent with 4-step reasoning workflow that analyzes logs, reflects on findings, searches for solutions, and provides actionable recommendations in real-time.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="url(#securityGradient)" stroke-width="2" fill="none"/>
+                            <circle cx="12" cy="12" r="3" fill="url(#securityGradient)"/>
+                            <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="url(#securityGradient)" stroke-width="2"/>
+                            <defs>
+                                <linearGradient id="securityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#4ade80"/>
+                                    <stop offset="100%" style="stop-color:#22c55e"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Enterprise Security Suite</h3>
+                    <p class="feature-description">Bank-level security with file validation, SQL injection protection, session management, and comprehensive audit logging for complete compliance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+                            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#performanceGradient)"/>
+                            <defs>
+                                <linearGradient id="performanceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#3b82f6"/>
+                                    <stop offset="100%" style="stop-color:#1d4ed8"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">High-Performance Engine</h3>
+                    <p class="feature-description">Intelligent caching system, real-time performance monitoring, and optimized processing pipelines deliver sub-second response times even with massive log files.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="url(#integrationGradient)" stroke-width="2" fill="none"/>
+                            <path d="M8 12L12 16L16 12" stroke="url(#integrationGradient)" stroke-width="2"/>
+                            <path d="M12 8V16" stroke="url(#integrationGradient)" stroke-width="2"/>
+                            <defs>
+                                <linearGradient id="integrationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                    <stop offset="100%" style="stop-color:#7c3aed"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Universal Integration</h3>
+                    <p class="feature-description">Seamlessly processes multiple log formats (JSON, XML, syslog), connects to SQL Server databases, and integrates with existing enterprise infrastructure.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="section architecture-section">
+        <div class="container">
+            <h2 class="section-title">Intelligent Architecture</h2>
+            <svg class="architecture-diagram" width="800" height="400" viewBox="0 0 800 400">
+                <!-- Background -->
+                <rect width="800" height="400" fill="#f8fafc" rx="10"/>
+                
+                <!-- Data Sources Layer -->
+                <rect x="50" y="50" width="120" height="80" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+                <text x="110" y="85" text-anchor="middle" font-size="12" font-weight="600" fill="#0369a1">Log Files</text>
+                <text x="110" y="100" text-anchor="middle" font-size="10" fill="#0369a1">JSON, XML, Syslog</text>
+                
+                <rect x="50" y="150" width="120" height="80" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+                <text x="110" y="185" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">SQL Database</text>
+                <text x="110" y="200" text-anchor="middle" font-size="10" fill="#15803d">Enterprise Data</text>
+                
+                <rect x="50" y="250" width="120" height="80" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                <text x="110" y="285" text-anchor="middle" font-size="12" font-weight="600" fill="#b45309">XML Context</text>
+                <text x="110" y="300" text-anchor="middle" font-size="10" fill="#b45309">Configuration</text>
+                
+                <!-- Processing Layer -->
+                <rect x="250" y="100" width="150" height="200" rx="15" fill="url(#processingGradient)" stroke="#6366f1" stroke-width="3"/>
+                <text x="325" y="130" text-anchor="middle" font-size="14" font-weight="700" fill="white">AI Processing Engine</text>
+                
+                <!-- AI Steps -->
+                <circle cx="325" cy="160" r="20" fill="rgba(255,255,255,0.9)"/>
+                <text x="325" y="166" text-anchor="middle" font-size="12" font-weight="600" fill="#6366f1">1</text>
+                <text x="325" y="185" text-anchor="middle" font-size="10" fill="white">Analysis</text>
+                
+                <circle cx="325" cy="210" r="20" fill="rgba(255,255,255,0.9)"/>
+                <text x="325" y="216" text-anchor="middle" font-size="12" font-weight="600" fill="#6366f1">2</text>
+                <text x="325" y="235" text-anchor="middle" font-size="10" fill="white">Reflection</text>
+                
+                <circle cx="325" cy="260" r="20" fill="rgba(255,255,255,0.9)"/>
+                <text x="325" y="266" text-anchor="middle" font-size="12" font-weight="600" fill="#6366f1">3</text>
+                <text x="325" y="285" text-anchor="middle" font-size="10" fill="white">Search</text>
+                
+                <!-- Web Search -->
+                <rect x="450" y="230" width="100" height="60" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+                <text x="500" y="255" text-anchor="middle" font-size="12" font-weight="600" fill="#dc2626">Web Search</text>
+                <text x="500" y="270" text-anchor="middle" font-size="10" fill="#dc2626">StackOverflow</text>
+                
+                <!-- War Room Interface -->
+                <rect x="600" y="100" width="150" height="200" rx="15" fill="url(#outputGradient)" stroke="#8b5cf6" stroke-width="3"/>
+                <text x="675" y="130" text-anchor="middle" font-size="14" font-weight="700" fill="white">War Room Chat</text>
+                <text x="675" y="160" text-anchor="middle" font-size="11" fill="white">Real-time Thinking</text>
+                <text x="675" y="180" text-anchor="middle" font-size="11" fill="white">Progress Tracking</text>
+                <text x="675" y="200" text-anchor="middle" font-size="11" fill="white">Actionable Results</text>
+                <text x="675" y="220" text-anchor="middle" font-size="11" fill="white">Export & History</text>
+                
+                <!-- Arrows -->
+                <path d="M170 90 L240 140" stroke="#6366f1" stroke-width="3" marker-end="url(#arrowhead)"/>
+                <path d="M170 190 L240 190" stroke="#6366f1" stroke-width="3" marker-end="url(#arrowhead)"/>
+                <path d="M170 290 L240 240" stroke="#6366f1" stroke-width="3" marker-end="url(#arrowhead)"/>
+                <path d="M400 260 L450 260" stroke="#dc2626" stroke-width="2" marker-end="url(#arrowhead)"/>
+                <path d="M450 260 L400 260" stroke="#dc2626" stroke-width="2" marker-end="url(#arrowhead)"/>
+                <path d="M400 200 L590 200" stroke="#8b5cf6" stroke-width="3" marker-end="url(#arrowhead)"/>
+                
+                <defs>
+                    <linearGradient id="processingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#6366f1"/>
+                        <stop offset="100%" style="stop-color:#4f46e5"/>
+                    </linearGradient>
+                    <linearGradient id="outputGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#8b5cf6"/>
+                        <stop offset="100%" style="stop-color:#7c3aed"/>
+                    </linearGradient>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Business Benefits Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Proven Business Impact</h2>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L15 9L22 9L17 14L19 22L12 18L5 22L7 14L2 9L9 9L12 2Z" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <span class="benefit-text">85% Faster Issue Resolution</span>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" fill="#10b981"/>
+                            <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                    <span class="benefit-text">95% Reduction in System Downtime</span>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2V6M6.41 6.41L9.17 9.17M2 12H6M6.41 17.59L9.17 14.83M12 22V18M17.59 17.59L14.83 14.83M22 12H18M17.59 6.41L14.83 9.17" stroke="#3b82f6" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="3" fill="#3b82f6"/>
+                        </svg>
+                    </div>
+                    <span class="benefit-text">24/7 Proactive Monitoring</span>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 4V2C16 1.45 15.55 1 15 1H9C8.45 1 8 1.45 8 2V4H4C3.45 4 3 4.45 3 5S3.45 6 4 6H5V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V6H20C20.55 6 21 5.55 21 5S20.55 4 20 4H16Z" fill="#ef4444"/>
+                        </svg>
+                    </div>
+                    <span class="benefit-text">70% Cost Reduction in IT Operations</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROI Section -->
+    <section class="section roi-section">
+        <div class="container">
+            <h2 class="section-title" style="color: white;">Return on Investment</h2>
+            <div class="roi-stats">
+                <div class="roi-stat">
+                    <span class="roi-number">300%</span>
+                    <span class="roi-label">ROI in First Year</span>
+                </div>
+                <div class="roi-stat">
+                    <span class="roi-number">$2.5M</span>
+                    <span class="roi-label">Average Annual Savings</span>
+                </div>
+                <div class="roi-stat">
+                    <span class="roi-number">< 3</span>
+                    <span class="roi-label">Months to Break-even</span>
+                </div>
+                <div class="roi-stat">
+                    <span class="roi-number">99.9%</span>
+                    <span class="roi-label">System Uptime Achieved</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="section" style="text-align: center; background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+        <div class="container">
+            <h2 style="color: white; margin-bottom: 1rem;">Ready to Transform Your IT Operations?</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">Join industry leaders who have revolutionized their troubleshooting capabilities with our AI-powered solution.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="#" class="cta-button">Schedule Demo</a>
+                <a href="#" class="cta-button" style="background: rgba(255,255,255,0.2); border: 2px solid white;">Request Pricing</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI-Powered Log Analysis Tool. Enterprise-grade solution for intelligent troubleshooting.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .benefit-item, .roi-stat').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
