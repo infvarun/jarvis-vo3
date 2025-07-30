@@ -30,12 +30,16 @@ class AIAnalyzer:
         Perform AI-powered analysis of logs with optional database and XML context
         
         Args:
-            context: Dictionary containing logs, database results, and XML context
+            context: Dictionary containing logs, database results, XML context, or OCR data
             
         Returns:
             Dictionary containing structured analysis results
         """
         try:
+            # Check if this is OCR analysis
+            if 'image_ocr_data' in context:
+                return self.analyze_ocr_content(context)
+            
             # Prepare the analysis prompt
             prompt = self._build_analysis_prompt(context)
             
@@ -317,6 +321,177 @@ Focus on actionable insights and be specific about timestamps, error patterns, a
             score += 4.0
         
         return score
+    
+    def analyze_ocr_content(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyze OCR extracted text with AI
+        
+        Args:
+            context: Dictionary containing OCR data and user query
+            
+        Returns:
+            Dictionary containing structured analysis results
+        """
+        try:
+            # Extract OCR context
+            ocr_data = context.get('image_ocr_data', {})
+            user_query = context.get('user_query', '')
+            
+            # Build OCR analysis prompt
+            ocr_prompt = self._build_ocr_analysis_prompt(ocr_data, user_query)
+            
+            # Create messages for LangChain
+            messages = [
+                SystemMessage(content=self._get_ocr_system_prompt()),
+                HumanMessage(content=ocr_prompt)
+            ]
+            
+            # Call LangChain LLM
+            response = self.llm.invoke(messages)
+            
+            # Parse response
+            response_content = response.content if response.content else "{}"
+            if isinstance(response_content, str):
+                # Clean up response content
+                clean_content = response_content.strip()
+                
+                # Try to extract JSON from markdown code blocks
+                if "```json" in clean_content:
+                    json_start = clean_content.find("```json") + 7
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                elif "```" in clean_content:
+                    json_start = clean_content.find("```") + 3
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                
+                try:
+                    analysis_result = json.loads(clean_content)
+                except json.JSONDecodeError as e:
+                    # Fallback to structured response if JSON parsing fails
+                    analysis_result = {
+                        "summary": response_content,
+                        "translation": "Translation unavailable - JSON parsing failed",
+                        "key_findings": ["AI analysis completed but response format was not structured"],
+                        "recommendations": ["Review the OCR extracted text manually"],
+                        "error": f"JSON parsing failed: {str(e)}"
+                    }
+            else:
+                analysis_result = {"error": "Invalid response format from AI model"}
+            
+            # Add metadata
+            analysis_result['analysis_timestamp'] = datetime.now().isoformat()
+            analysis_result['model_used'] = "gpt-4o"
+            analysis_result['user_query'] = user_query
+            
+            return analysis_result
+            
+        except Exception as e:
+            return {
+                'error': f"OCR AI analysis failed: {str(e)}",
+                'analysis_timestamp': datetime.now().isoformat(),
+                'user_query': context.get('user_query', '')
+            }
+    
+    def _get_ocr_system_prompt(self) -> str:
+        """
+        Get the system prompt for OCR content analysis
+        
+        Returns:
+            System prompt string
+        """
+        return """You are a multilingual technical support specialist with expertise in Japanese-English translation and error message analysis.
+
+Your task is to analyze text extracted from screenshots and images, with special focus on:
+1. Japanese error messages and interface text
+2. Technical documentation and error screens  
+3. Application interfaces and system messages
+4. Troubleshooting guidance for technical issues
+
+IMPORTANT: Respond ONLY with a valid JSON object. Do not include any markdown formatting, explanations, or text outside the JSON. The response must start with '{' and end with '}'.
+
+Use this exact JSON structure:
+{
+    "summary": "Brief summary of what was found in the image text",
+    "translation": "English translation of any foreign language text (especially Japanese)",
+    "original_text": "The original extracted text as-is",
+    "key_findings": [
+        "Important findings from the text analysis"
+    ],
+    "error_analysis": {
+        "error_type": "Type of error if any (e.g., 'Database Error', 'Authentication Error')", 
+        "severity": "HIGH|MEDIUM|LOW",
+        "affected_component": "System component mentioned in error"
+    },
+    "recommendations": [
+        "Specific actionable recommendations based on the content"
+    ],
+    "troubleshooting_steps": [
+        "Step-by-step troubleshooting instructions if applicable"
+    ]
+}
+
+Focus on accurate translation and practical technical guidance."""
+    
+    def _build_ocr_analysis_prompt(self, ocr_data: Dict[str, Any], user_query: str) -> str:
+        """
+        Build analysis prompt for OCR extracted content
+        
+        Args:
+            ocr_data: OCR extraction results
+            user_query: User's question about the image
+            
+        Returns:
+            Formatted prompt string
+        """
+        prompt_parts = []
+        
+        # Add user query
+        prompt_parts.append(f"## USER QUESTION")
+        prompt_parts.append(f"'{user_query}'")
+        
+        # Add extracted text
+        extracted_text = ocr_data.get('extracted_text', '')
+        if extracted_text:
+            prompt_parts.append(f"\n## EXTRACTED TEXT FROM IMAGE")
+            prompt_parts.append(f"Text content: {extracted_text}")
+            
+            # Add high confidence segments if available
+            high_conf_segments = ocr_data.get('high_confidence_segments', [])
+            if high_conf_segments:
+                prompt_parts.append(f"\n## HIGH CONFIDENCE TEXT SEGMENTS")
+                for i, segment in enumerate(high_conf_segments[:10], 1):  # Limit to top 10
+                    confidence = segment.get('confidence', 0)
+                    text = segment.get('text', '')
+                    prompt_parts.append(f"{i}. '{text}' (confidence: {confidence}%)")
+        
+        # Add image processing details
+        image_info = ocr_data.get('image_info', {})
+        if image_info:
+            prompt_parts.append(f"\n## IMAGE DETAILS")
+            prompt_parts.append(f"Filename: {image_info.get('filename', 'Unknown')}")
+            prompt_parts.append(f"Format: {image_info.get('format', 'Unknown')}")
+            if 'size' in image_info:
+                prompt_parts.append(f"Size: {image_info['size'][0]}x{image_info['size'][1]} pixels")
+        
+        # Add languages detected
+        languages = ocr_data.get('languages_detected', [])
+        if languages:
+            prompt_parts.append(f"\n## OCR LANGUAGES USED")
+            prompt_parts.append(f"Languages: {', '.join(languages)}")
+        
+        # Add analysis instructions
+        prompt_parts.append(f"\n## ANALYSIS REQUEST")
+        prompt_parts.append("Please analyze the extracted text to:")
+        prompt_parts.append("1. Answer the user's specific question")
+        prompt_parts.append("2. Provide accurate translation of any Japanese or foreign text")
+        prompt_parts.append("3. Identify any error messages or technical issues")
+        prompt_parts.append("4. Suggest troubleshooting steps if applicable")
+        prompt_parts.append("5. Provide actionable recommendations")
+        
+        return "\n".join(prompt_parts)
     
     def _format_logs_for_analysis(self, logs: List[Dict[str, Any]]) -> str:
         """

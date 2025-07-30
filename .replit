@@ -1,8 +1,8 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "python3"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["bash", "glibcLocales", "unixODBC"]
+packages = ["bash", "freetype", "glibcLocales", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tesseract", "tk", "unixODBC", "zlib"]
 
 [deployment]
 deploymentTarget = "autoscale"

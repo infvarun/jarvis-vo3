@@ -2,12 +2,15 @@ import streamlit as st
 import pandas as pd
 import os
 import hashlib
+import json
+import base64
 from datetime import datetime, timedelta
 from components.file_handler import FileHandler
 from components.database_handler import DatabaseHandler
 from components.xml_parser import XMLParser
 from components.log_analyzer import LogAnalyzer
 from components.ai_analyzer import AIAnalyzer
+from components.image_ocr_handler import ImageOCRHandler
 
 # Enterprise utilities
 from config.settings import Config
@@ -112,6 +115,10 @@ def main():
         st.session_state.xml_context = None
     if 'problem_statement' not in st.session_state:
         st.session_state.problem_statement = None
+    if 'ocr_results' not in st.session_state:
+        st.session_state.ocr_results = None
+    if 'ocr_analysis' not in st.session_state:
+        st.session_state.ocr_analysis = None
 
     # Create tabs with custom HTML icons
     st.markdown("""
@@ -127,12 +134,13 @@ def main():
     """, unsafe_allow_html=True)
     
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📁 File Upload", 
         "🗃️ Database Query", 
         "⚙️ Analysis", 
         "📊 Results",
-        "🚨 War Room"
+        "🚨 War Room",
+        "📷 Image OCR"
     ])
     
     with tab1:
@@ -149,6 +157,9 @@ def main():
     
     with tab5:
         handle_war_room()
+    
+    with tab6:
+        handle_image_ocr()
 
 def handle_file_uploads():
     st.header("File Upload")
@@ -974,6 +985,212 @@ def handle_war_room():
                 )
             else:
                 st.info("No chat history to export")
+
+def handle_image_ocr():
+    """Handle Image OCR processing and analysis"""
+    st.header("Image OCR Analysis")
+    st.markdown("**Extract text from screenshots and images, especially useful for Japanese error messages**")
+    
+    # Check if API key is available for AI analysis
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        st.warning("🔐 OpenAI API key not found. OCR extraction will work, but AI analysis of results will be unavailable.")
+        st.info("💡 Set OPENAI_API_KEY in your Replit secrets to enable AI analysis of extracted text.")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("📷 Image Upload & OCR")
+        
+        # Language selection for OCR
+        ocr_handler = ImageOCRHandler()
+        supported_languages = ocr_handler.get_supported_languages()
+        
+        selected_languages = st.multiselect(
+            "Select OCR Languages",
+            options=list(supported_languages.keys()),
+            default=['eng', 'jpn'],
+            format_func=lambda x: f"{supported_languages[x]} ({x})",
+            help="Select languages for text recognition. Japanese + English is recommended for Japanese error messages."
+        )
+        
+        # Image upload
+        uploaded_image = st.file_uploader(
+            "Upload Screenshot or Image",
+            type=['png', 'jpg', 'jpeg', 'bmp', 'tiff'],
+            help="Upload screenshots of error messages, application interfaces, or any image containing text"
+        )
+        
+        if uploaded_image:
+            # Validate image
+            is_valid, message = ocr_handler.validate_image(uploaded_image)
+            if not is_valid:
+                st.error(f"❌ {message}")
+                return
+            
+            # Display uploaded image
+            st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_container_width=True)
+            
+            # Process OCR button
+            if st.button("🔍 Extract Text with OCR", type="primary", use_container_width=True):
+                with st.spinner("Extracting text from image..."):
+                    try:
+                        ocr_result = ocr_handler.extract_text_from_image(
+                            uploaded_image, 
+                            languages=selected_languages
+                        )
+                        
+                        if 'error' in ocr_result:
+                            st.error(f"❌ OCR failed: {ocr_result['error']}")
+                        else:
+                            st.session_state.ocr_results = ocr_result
+                            st.success("✅ Text extraction completed!")
+                            st.rerun()
+                            
+                    except Exception as e:
+                        st.error(f"❌ OCR processing error: {str(e)}")
+    
+    with col2:
+        st.subheader("🤖 AI Analysis")
+        
+        if st.session_state.ocr_results:
+            # Display extracted text
+            ocr_data = st.session_state.ocr_results
+            
+            st.write("**Extracted Text:**")
+            if ocr_data['extracted_text']:
+                st.text_area(
+                    "OCR Results", 
+                    value=ocr_data['extracted_text'], 
+                    height=200, 
+                    disabled=True
+                )
+                
+                # Show confidence statistics
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.metric("Total Segments", ocr_data['total_segments'])
+                with col_b:
+                    st.metric("High Confidence", ocr_data['high_confidence_count'])
+                
+            else:
+                st.warning("⚠️ No text was extracted from the image")
+                return
+            
+            # User query input
+            st.write("**What would you like to know about this image?**")
+            user_query = st.text_area(
+                "Your Question",
+                placeholder="Examples:\n• What is the error message in this screenshot?\n• Translate the Japanese text to English\n• What steps should I take to resolve this issue?\n• Summarize the information shown in this image",
+                height=120
+            )
+            
+            # AI Analysis button
+            if st.button("🚀 Analyze with AI", type="primary", use_container_width=True):
+                if not user_query.strip():
+                    st.warning("Please enter a question about the image")
+                    return
+                
+                if not api_key:
+                    st.error("OpenAI API key required for AI analysis")
+                    return
+                
+                with st.spinner("Analyzing extracted text with AI..."):
+                    try:
+                        # Prepare context for AI analysis
+                        analysis_context = ocr_handler.analyze_extracted_text(ocr_data, user_query)
+                        
+                        # Use AI analyzer with OCR context
+                        ai_analyzer = AIAnalyzer()
+                        ai_context = {
+                            'image_ocr_data': analysis_context,
+                            'user_query': user_query,
+                            'problem_statement': f"Image Analysis: {user_query}"
+                        }
+                        
+                        analysis_result = ai_analyzer.analyze_logs(ai_context)
+                        st.session_state.ocr_analysis = analysis_result
+                        
+                        st.success("✅ AI analysis completed!")
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"❌ AI analysis error: {str(e)}")
+        else:
+            st.info("📋 Upload and process an image first to see AI analysis options")
+    
+    # Display analysis results
+    if st.session_state.ocr_analysis:
+        st.markdown("---")
+        st.subheader("📊 Analysis Results")
+        
+        results = st.session_state.ocr_analysis
+        
+        if 'error' in results:
+            st.error(f"Analysis failed: {results['error']}")
+        else:
+            # Create result tabs
+            result_tabs = st.tabs(["📝 Summary", "🔤 Translation", "💡 Recommendations", "📋 Details"])
+            
+            with result_tabs[0]:  # Summary
+                if 'summary' in results:
+                    st.markdown("### Analysis Summary")
+                    st.info(results['summary'])
+                
+                if 'key_findings' in results:
+                    st.markdown("### Key Findings")
+                    for finding in results['key_findings']:
+                        st.write(f"• {finding}")
+            
+            with result_tabs[1]:  # Translation
+                if 'translation' in results:
+                    st.markdown("### Translation")
+                    st.success(results['translation'])
+                
+                if 'original_text' in results:
+                    st.markdown("### Original Text")
+                    st.text_area("Original", value=results['original_text'], disabled=True, height=100)
+            
+            with result_tabs[2]:  # Recommendations
+                if 'recommendations' in results:
+                    st.markdown("### Recommendations")
+                    for i, rec in enumerate(results['recommendations'], 1):
+                        st.write(f"{i}. {rec}")
+                
+                if 'troubleshooting_steps' in results:
+                    st.markdown("### Troubleshooting Steps")
+                    for i, step in enumerate(results['troubleshooting_steps'], 1):
+                        st.write(f"**Step {i}:** {step}")
+            
+            with result_tabs[3]:  # Details
+                st.markdown("### OCR Processing Details")
+                if st.session_state.ocr_results:
+                    ocr_info = st.session_state.ocr_results['image_info']
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Image Size", f"{ocr_info['size'][0]}x{ocr_info['size'][1]}")
+                    with col2:
+                        st.metric("Format", ocr_info['format'])
+                    with col3:
+                        st.metric("Languages", ", ".join(st.session_state.ocr_results['languages_used']))
+                
+                # Export results
+                if st.button("📤 Export Analysis Results"):
+                    export_data = {
+                        'timestamp': datetime.now().isoformat(),
+                        'image_info': st.session_state.ocr_results.get('image_info', {}),
+                        'extracted_text': st.session_state.ocr_results.get('extracted_text', ''),
+                        'user_query': st.session_state.ocr_analysis.get('user_query', ''),
+                        'analysis_results': results
+                    }
+                    
+                    st.download_button(
+                        label="⬇️ Download OCR Analysis",
+                        data=json.dumps(export_data, indent=2, ensure_ascii=False),
+                        file_name=f"ocr_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        mime="application/json"
+                    )
 
 if __name__ == "__main__":
     main()

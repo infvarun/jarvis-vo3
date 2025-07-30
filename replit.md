@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**July 30, 2025**
+- Added comprehensive Image OCR tab for screenshot and image text extraction:
+  - Multi-language OCR support with focus on Japanese error messages and screenshots
+  - Advanced image preprocessing for improved text recognition accuracy
+  - AI-powered analysis of extracted text with translation capabilities
+  - Support for 10+ languages including Japanese, Chinese, Korean, and European languages
+  - Confidence-based text filtering to highlight reliable extraction results
+  - Specialized prompts for technical error message analysis and troubleshooting
+  - Export functionality for OCR results and AI analysis with full Unicode support
+
 **July 25, 2025**
 - Added optional problem statement input box on File Upload screen for targeted analysis:
   - Semantic search-based analysis narrowing functionality in AI analyzer
