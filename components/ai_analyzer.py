@@ -40,6 +40,10 @@ class AIAnalyzer:
             if 'image_ocr_data' in context:
                 return self.analyze_ocr_content(context)
             
+            # Check if this is real-time monitoring analysis
+            if 'realtime_activities' in context:
+                return self._analyze_realtime_activities(context)
+            
             # Prepare the analysis prompt
             prompt = self._build_analysis_prompt(context)
             
@@ -490,6 +494,209 @@ Focus on accurate translation and practical technical guidance."""
         prompt_parts.append("3. Identify any error messages or technical issues")
         prompt_parts.append("4. Suggest troubleshooting steps if applicable")
         prompt_parts.append("5. Provide actionable recommendations")
+        
+        return "\n".join(prompt_parts)
+    
+    def _analyze_realtime_activities(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyze real-time log activities with AI
+        
+        Args:
+            context: Dictionary containing realtime activities and user context
+            
+        Returns:
+            Dictionary containing structured analysis results
+        """
+        try:
+            activities = context.get('realtime_activities', [])
+            user_context = context.get('user_context', '')
+            
+            # Build real-time analysis prompt
+            prompt = self._build_realtime_analysis_prompt(activities, user_context)
+            
+            # Create messages for LangChain
+            messages = [
+                SystemMessage(content=self._get_realtime_system_prompt()),
+                HumanMessage(content=prompt)
+            ]
+            
+            # Call LangChain LLM
+            response = self.llm.invoke(messages)
+            
+            # Parse response
+            response_content = response.content if response.content else "{}"
+            if isinstance(response_content, str):
+                clean_content = response_content.strip()
+                
+                # Try to extract JSON from markdown code blocks
+                if "```json" in clean_content:
+                    json_start = clean_content.find("```json") + 7
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                elif "```" in clean_content:
+                    json_start = clean_content.find("```") + 3
+                    json_end = clean_content.find("```", json_start)
+                    if json_end != -1:
+                        clean_content = clean_content[json_start:json_end].strip()
+                
+                try:
+                    analysis_result = json.loads(clean_content)
+                except json.JSONDecodeError as e:
+                    # Fallback to structured response if JSON parsing fails
+                    analysis_result = {
+                        "summary": response_content,
+                        "insights": ["Real-time analysis completed but response format was not structured"],
+                        "recommendations": ["Review the live activities manually"],
+                        "patterns": [],
+                        "security_alerts": [],
+                        "performance_alerts": [],
+                        "error": f"JSON parsing failed: {str(e)}"
+                    }
+            else:
+                analysis_result = {"error": "Invalid response format from AI model"}
+            
+            # Add metadata
+            analysis_result['analysis_timestamp'] = datetime.now().isoformat()
+            analysis_result['model_used'] = "gpt-4o"
+            analysis_result['activities_count'] = len(activities)
+            
+            return analysis_result
+            
+        except Exception as e:
+            return {
+                'error': f"Real-time analysis failed: {str(e)}",
+                'analysis_timestamp': datetime.now().isoformat(),
+                'activities_count': len(context.get('realtime_activities', []))
+            }
+    
+    def _get_realtime_system_prompt(self) -> str:
+        """
+        Get the system prompt for real-time activity analysis
+        
+        Returns:
+            System prompt string
+        """
+        return """You are a real-time log monitoring specialist with expertise in security analysis, performance monitoring, and operational intelligence.
+
+Your task is to analyze live log activities and provide actionable insights for:
+1. User authentication patterns and security events
+2. Transaction processing and business operations
+3. System errors and performance issues
+4. Operational trends and anomalies
+
+IMPORTANT: Respond ONLY with a valid JSON object. Do not include any markdown formatting, explanations, or text outside the JSON. The response must start with '{' and end with '}'.
+
+Use this exact JSON structure:
+{
+    "summary": "Brief overview of the analyzed activities and key findings",
+    "insights": [
+        "Key operational insights from the live data"
+    ],
+    "recommendations": [
+        "Actionable recommendations based on the analysis"
+    ],
+    "patterns": [
+        "Important patterns or trends observed in the activities"
+    ],
+    "security_alerts": [
+        "Security-related alerts or concerns"
+    ],
+    "performance_alerts": [
+        "Performance or operational alerts"
+    ],
+    "trends": [
+        "Notable trends in user behavior or system performance"
+    ]
+}
+
+Focus on actionable intelligence and real-time operational insights."""
+    
+    def _build_realtime_analysis_prompt(self, activities: List[Dict[str, Any]], user_context: str) -> str:
+        """
+        Build analysis prompt for real-time activities
+        
+        Args:
+            activities: List of activity information from live logs
+            user_context: User's monitoring context and focus areas
+            
+        Returns:
+            Formatted prompt string
+        """
+        prompt_parts = []
+        
+        # Add user context
+        if user_context:
+            prompt_parts.append(f"## MONITORING CONTEXT")
+            prompt_parts.append(f"User is monitoring for: {user_context}")
+        
+        # Add activity summary
+        prompt_parts.append(f"\n## LIVE ACTIVITIES SUMMARY")
+        prompt_parts.append(f"Total activities analyzed: {len(activities)}")
+        
+        # Categorize activities
+        login_activities = []
+        transaction_activities = []
+        error_activities = []
+        performance_activities = []
+        
+        for activity in activities:
+            for act in activity.get('activities', []):
+                if act['type'] == 'login':
+                    login_activities.append(activity)
+                elif act['type'] == 'transaction':
+                    transaction_activities.append(activity)
+                elif act['type'] == 'error':
+                    error_activities.append(activity)
+                elif act['type'] == 'performance':
+                    performance_activities.append(activity)
+        
+        # Add activity breakdowns
+        if login_activities:
+            prompt_parts.append(f"\n## LOGIN ACTIVITIES ({len(login_activities)} detected)")
+            for activity in login_activities[:5]:  # Show up to 5 examples
+                prompt_parts.append(f"- {activity['original_line'][:100]}...")
+        
+        if transaction_activities:
+            prompt_parts.append(f"\n## TRANSACTION ACTIVITIES ({len(transaction_activities)} detected)")
+            for activity in transaction_activities[:5]:
+                prompt_parts.append(f"- {activity['original_line'][:100]}...")
+        
+        if error_activities:
+            prompt_parts.append(f"\n## ERROR ACTIVITIES ({len(error_activities)} detected)")
+            for activity in error_activities[:5]:
+                prompt_parts.append(f"- {activity['original_line'][:100]}...")
+        
+        if performance_activities:
+            prompt_parts.append(f"\n## PERFORMANCE ACTIVITIES ({len(performance_activities)} detected)")
+            for activity in performance_activities[:5]:
+                prompt_parts.append(f"- {activity['original_line'][:100]}...")
+        
+        # Add priority analysis
+        high_priority = [a for a in activities if a.get('priority') == 'HIGH']
+        medium_priority = [a for a in activities if a.get('priority') == 'MEDIUM']
+        
+        if high_priority:
+            prompt_parts.append(f"\n## HIGH PRIORITY EVENTS ({len(high_priority)} detected)")
+            for activity in high_priority[:3]:
+                prompt_parts.append(f"- {activity['original_line']}")
+        
+        # Add time range
+        if activities:
+            first_time = activities[0].get('timestamp', 'Unknown')
+            last_time = activities[-1].get('timestamp', 'Unknown')
+            prompt_parts.append(f"\n## TIME RANGE")
+            prompt_parts.append(f"From: {first_time[:19]}")
+            prompt_parts.append(f"To: {last_time[:19]}")
+        
+        # Add analysis instructions
+        prompt_parts.append(f"\n## ANALYSIS REQUEST")
+        prompt_parts.append("Please analyze these live activities to provide:")
+        prompt_parts.append("1. Summary of key operational events")
+        prompt_parts.append("2. Security insights and alerts")
+        prompt_parts.append("3. Performance and operational recommendations")
+        prompt_parts.append("4. Patterns and trends in user behavior")
+        prompt_parts.append("5. Actionable next steps for monitoring")
         
         return "\n".join(prompt_parts)
     

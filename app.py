@@ -4,6 +4,7 @@ import os
 import hashlib
 import json
 import base64
+import time
 from datetime import datetime, timedelta
 from components.file_handler import FileHandler
 from components.database_handler import DatabaseHandler
@@ -11,6 +12,7 @@ from components.xml_parser import XMLParser
 from components.log_analyzer import LogAnalyzer
 from components.ai_analyzer import AIAnalyzer
 from components.image_ocr_handler import ImageOCRHandler
+from components.realtime_monitor import RealtimeLogMonitor
 
 # Enterprise utilities
 from config.settings import Config
@@ -119,6 +121,12 @@ def main():
         st.session_state.ocr_results = None
     if 'ocr_analysis' not in st.session_state:
         st.session_state.ocr_analysis = None
+    if 'realtime_monitor' not in st.session_state:
+        st.session_state.realtime_monitor = RealtimeLogMonitor()
+    if 'live_activities' not in st.session_state:
+        st.session_state.live_activities = []
+    if 'monitoring_active' not in st.session_state:
+        st.session_state.monitoring_active = False
 
     # Create tabs with custom HTML icons
     st.markdown("""
@@ -134,13 +142,14 @@ def main():
     """, unsafe_allow_html=True)
     
     # Create tabs for different sections
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📁 File Upload", 
         "🗃️ Database Query", 
         "⚙️ Analysis", 
         "📊 Results",
         "🚨 War Room",
-        "📷 Image OCR"
+        "📷 Image OCR",
+        "📡 Live Monitor"
     ])
     
     with tab1:
@@ -160,6 +169,9 @@ def main():
     
     with tab6:
         handle_image_ocr()
+    
+    with tab7:
+        handle_realtime_monitoring()
 
 def handle_file_uploads():
     st.header("File Upload")
@@ -1191,6 +1203,252 @@ def handle_image_ocr():
                         file_name=f"ocr_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                         mime="application/json"
                     )
+
+def handle_realtime_monitoring():
+    """Handle real-time log monitoring and streaming analysis"""
+    st.header("Real-time Log Monitor")
+    st.markdown("**Monitor live log files for user activities, transactions, and errors**")
+    
+    # Check if API key is available
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        st.warning("🔐 OpenAI API key not found. Live monitoring will work, but AI analysis will be unavailable.")
+        st.info("💡 Set OPENAI_API_KEY in your Replit secrets to enable AI analysis of live activities.")
+    
+    monitor = st.session_state.realtime_monitor
+    
+    # Main layout
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("📡 Log File Configuration")
+        
+        # File path input
+        log_path = st.text_input(
+            "Log File Path",
+            placeholder="Examples:\n• /var/log/application.log\n• \\\\server\\logs\\app.log\n• C:\\logs\\system.log",
+            help="Enter the full path to the log file you want to monitor. Supports local paths, UNC paths, and NAS mounts."
+        )
+        
+        # Monitoring options
+        col_a, col_b = st.columns(2)
+        with col_a:
+            start_from_end = st.checkbox(
+                "Start from EOF", 
+                value=True,
+                help="Start monitoring from the end of file (recommended for live monitoring)"
+            )
+        with col_b:
+            auto_analyze = st.checkbox(
+                "Auto AI Analysis",
+                value=False,
+                help="Automatically analyze activities every 10 new log lines"
+            )
+        
+        # Control buttons
+        button_col1, button_col2 = st.columns(2)
+        
+        with button_col1:
+            if st.button("🚀 Start Monitoring", type="primary", use_container_width=True, disabled=not log_path):
+                if log_path:
+                    with st.spinner("Starting log monitoring..."):
+                        success = monitor.start_monitoring(log_path, start_from_end)
+                        if success:
+                            st.session_state.monitoring_active = True
+                            st.success("✅ Monitoring started!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to start monitoring. Check the logs for details.")
+        
+        with button_col2:
+            if st.button("⏹️ Stop Monitoring", use_container_width=True):
+                monitor.stop_monitoring()
+                st.session_state.monitoring_active = False
+                st.info("🛑 Monitoring stopped")
+                st.rerun()
+        
+        # Current status
+        if st.session_state.monitoring_active:
+            stats = monitor.get_monitoring_stats()
+            st.success("🟢 **Monitoring Active**")
+            st.metric("Queue Size", stats['queue_size'])
+            if stats['file_path']:
+                st.code(f"Monitoring: {stats['file_path']}")
+        else:
+            st.info("🔴 **Monitoring Inactive**")
+    
+    with col2:
+        st.subheader("🤖 AI Analysis Control")
+        
+        # Analysis context
+        analysis_context = st.text_area(
+            "Analysis Context",
+            placeholder="Describe what you're monitoring for:\n• User login patterns\n• Transaction failures\n• Performance issues\n• Security incidents",
+            height=100
+        )
+        
+        # Batch analysis controls
+        if st.session_state.live_activities:
+            activity_count = len(st.session_state.live_activities)
+            st.metric("Live Activities", activity_count)
+            
+            if api_key and st.button("🧠 Analyze Current Batch", type="secondary", use_container_width=True):
+                if activity_count > 0:
+                    with st.spinner("Analyzing live activities..."):
+                        try:
+                            analysis = monitor.analyze_activity_batch(
+                                st.session_state.live_activities,
+                                analysis_context
+                            )
+                            st.session_state.batch_analysis = analysis
+                            st.success(f"✅ Analyzed {activity_count} activities")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Analysis failed: {str(e)}")
+            
+            # Clear activities button
+            if st.button("🗑️ Clear Activities", use_container_width=True):
+                st.session_state.live_activities = []
+                st.rerun()
+        else:
+            st.info("📋 No live activities captured yet")
+    
+    # Live activity feed
+    st.markdown("---")
+    st.subheader("📊 Live Activity Feed")
+    
+    # Auto-refresh mechanism
+    if st.session_state.monitoring_active:
+        # Get new log updates
+        updates = monitor.get_log_updates()
+        
+        # Process updates
+        new_activities = 0
+        for update in updates:
+            if update['type'] == 'log_line':
+                activity = update['data']
+                if activity['activities']:  # Only show lines with detected activities
+                    st.session_state.live_activities.append(activity)
+                    new_activities += 1
+            elif update['type'] == 'error':
+                st.error(f"Monitor Error: {update['data']['error']}")
+            elif update['type'] == 'monitoring_started':
+                st.success(f"✅ {update['data']['message']}")
+            elif update['type'] == 'monitoring_stopped':
+                st.info(f"🛑 {update['data']['message']}")
+                st.session_state.monitoring_active = False
+            elif update['type'] == 'file_rotated':
+                st.warning(f"🔄 {update['data']['message']}")
+        
+        # Auto-refresh the page to show new activities
+        if updates:
+            st.rerun()
+        
+        # Show refresh hint if monitoring but no new data
+        if not updates:
+            st.empty().markdown("*Monitoring for new log entries... (auto-refresh)*")
+            time.sleep(2)
+            st.rerun()
+    
+    # Display recent activities
+    if st.session_state.live_activities:
+        # Activity summary metrics
+        activities = st.session_state.live_activities[-20:]  # Show last 20
+        
+        col_metrics = st.columns(4)
+        login_count = sum(1 for a in activities if any(act['type'] == 'login' for act in a['activities']))
+        transaction_count = sum(1 for a in activities if any(act['type'] == 'transaction' for act in a['activities']))
+        error_count = sum(1 for a in activities if any(act['type'] == 'error' for act in a['activities']))
+        high_priority = sum(1 for a in activities if a['priority'] == 'HIGH')
+        
+        with col_metrics[0]:
+            st.metric("Logins", login_count)
+        with col_metrics[1]:
+            st.metric("Transactions", transaction_count)
+        with col_metrics[2]:
+            st.metric("Errors", error_count)
+        with col_metrics[3]:
+            st.metric("High Priority", high_priority)
+        
+        # Activity timeline
+        st.markdown("### Recent Activities")
+        for activity in reversed(activities):  # Show newest first
+            priority_color = {
+                'HIGH': '🔴',
+                'MEDIUM': '🟡', 
+                'LOW': '🟢'
+            }.get(activity['priority'], '⚪')
+            
+            with st.expander(f"{priority_color} {activity['log_timestamp'] if 'log_timestamp' in activity else activity['timestamp'][:19]} - {len(activity['activities'])} activities"):
+                # Show original log line
+                st.code(activity['original_line'])
+                
+                # Show detected activities
+                for act in activity['activities']:
+                    st.write(f"**{act['type'].title()}**: {act['matches']}")
+    
+    # Show AI analysis results
+    if hasattr(st.session_state, 'batch_analysis') and st.session_state.batch_analysis:
+        st.markdown("---")
+        st.subheader("🧠 AI Analysis Results")
+        
+        analysis = st.session_state.batch_analysis
+        
+        if 'error' in analysis:
+            st.error(f"Analysis Error: {analysis['error']}")
+        else:
+            # Create analysis tabs
+            analysis_tabs = st.tabs(["📝 Summary", "🔍 Insights", "⚠️ Alerts", "📊 Patterns"])
+            
+            with analysis_tabs[0]:  # Summary
+                if 'summary' in analysis:
+                    st.info(analysis['summary'])
+                if 'key_findings' in analysis:
+                    st.markdown("**Key Findings:**")
+                    for finding in analysis['key_findings']:
+                        st.write(f"• {finding}")
+            
+            with analysis_tabs[1]:  # Insights
+                if 'insights' in analysis:
+                    for insight in analysis['insights']:
+                        st.success(f"💡 {insight}")
+                if 'recommendations' in analysis:
+                    st.markdown("**Recommendations:**")
+                    for rec in analysis['recommendations']:
+                        st.write(f"→ {rec}")
+            
+            with analysis_tabs[2]:  # Alerts
+                if 'security_alerts' in analysis:
+                    for alert in analysis['security_alerts']:
+                        st.error(f"🚨 {alert}")
+                if 'performance_alerts' in analysis:
+                    for alert in analysis['performance_alerts']:
+                        st.warning(f"⚡ {alert}")
+            
+            with analysis_tabs[3]:  # Patterns
+                if 'patterns' in analysis:
+                    for pattern in analysis['patterns']:
+                        st.write(f"📈 {pattern}")
+                if 'trends' in analysis:
+                    for trend in analysis['trends']:
+                        st.write(f"📊 {trend}")
+            
+            # Export analysis
+            if st.button("📤 Export Live Analysis"):
+                export_data = {
+                    'timestamp': datetime.now().isoformat(),
+                    'activities_analyzed': len(st.session_state.live_activities),
+                    'analysis_context': analysis_context,
+                    'analysis_results': analysis,
+                    'recent_activities': st.session_state.live_activities[-10:]  # Last 10 activities
+                }
+                
+                st.download_button(
+                    label="⬇️ Download Live Analysis",
+                    data=json.dumps(export_data, indent=2, ensure_ascii=False),
+                    file_name=f"live_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
+                )
 
 if __name__ == "__main__":
     main()

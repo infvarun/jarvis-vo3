@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**July 31, 2025**
+- Implemented comprehensive Real-time Log Monitoring and Streaming Analysis:
+  - Live log file monitoring with NAS path support for continuous log streaming
+  - Intelligent activity detection for user logins, transactions, errors, and performance events
+  - Real-time pattern recognition and priority-based event classification
+  - AI-powered batch analysis of live activities with contextual insights
+  - Auto-refresh interface showing live activity feeds with metrics and timeline
+  - Advanced regex patterns for extracting user IDs, transaction amounts, and error types
+  - Thread-based monitoring with queue management for high-performance log processing
+  - Export functionality for live analysis results and activity summaries
+
 **July 30, 2025**
 - Added comprehensive Image OCR tab for screenshot and image text extraction:
   - Multi-language OCR support with focus on Japanese error messages and screenshots
